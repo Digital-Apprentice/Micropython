@@ -13,8 +13,8 @@
 ###         button_value - checks and returns present GPIO value
 ###         state_value - checks or sets (set 0 after handling procedure) new value of present state, it gives the number of clicks, takes values > 0,
 ###                       for multiple clicks, each click within the click_interval time will be counted as a multiple click
-###         is_pressed - returns True if pressed or False if released, e.g. helpfull for handling long press operations 
-###         is_released - returns True if released or False if pressed, e.g. helpfull for handling multiple clicks
+###         is_pressed - returns True if pressed or False if released, e.g. helpful for handling long press operations
+###         is_released - returns True if released or False if pressed, e.g. helpful for handling multiple clicks
 ###         click_interval - checks or sets the time of click interval
 ###         long_press_time - checks or sets the time of long press operation
 
