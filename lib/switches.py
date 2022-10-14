@@ -75,7 +75,6 @@ class Button(object):
                             self._state += 1
                         else:
                             self._state = 1
-                        print('state',self._state,'click interval',click_interval)
                         self._last_state = self._state
                         self._time_of_last_clicked = time.ticks_ms()
                     elif self._pressing_time >= self._long_press_time:
