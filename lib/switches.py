@@ -130,7 +130,7 @@ class Button(object):
             self._long_press_time = long_press_time
               
 
-class RotarySwitch(object, Button):
+class RotaryEncoder(object, Button):
     
     def __init__(self, pin_A, pin_B,switch_pin=None, powering='GND',start_val=0,step=1,direction='CW'):
         self.pin_A = Pin(pin_A,Pin.IN,Pin.PULL_UP if powering == 'GND' else Pin.PULL_DOWN) 
