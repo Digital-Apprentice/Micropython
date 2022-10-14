@@ -97,8 +97,6 @@ class Button(object):
             else:
                 self._base_button_value = 0          # pin pulled-down for sensing high state (logic '1')
             self._last_button_value = self._base_button_value
-            print(self.button_pin, self._powering)
-            
         else:
             return self._powering
     
