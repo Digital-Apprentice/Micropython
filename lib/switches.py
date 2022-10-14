@@ -1,4 +1,4 @@
-"""the class that supports switch operations including simple incremental rotary encoder as a rotary switch"""
+"""the classes that supports switch operations including simple incremental rotary encoder as a rotary switch"""
 # copyright Tomasz Zgrys (Digital-Apprentice) - 2022 - MIT license 
 
 
