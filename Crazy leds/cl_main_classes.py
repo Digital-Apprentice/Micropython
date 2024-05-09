@@ -1,8 +1,6 @@
-from machine import Pin, SoftI2C, I2S, SPI, RTC, freq, PWM
-#from cl_display import tft
-from lib.st7735r import ST7735R as TFT
-
+from machine import Pin, SoftI2C, I2S, SPI, RTC, freq
 import gc
+from lib.st7735r import ST7735R as TFT
 from lib.switches import Button, RotaryEncoder
 from cl_palettes import Palette, GammaTable
 from lib.bme280 import BME280
@@ -142,18 +140,20 @@ class Controller(Led):
         # set the CPU frequency to 240 MHz
         freq(240000000)
         self.tft = None
-        self.tft_active = True
         self.tft_brightness = 7
         self.tft_active = True
+        self.set_tft()
+        self.progress(0)
         self.gamma = True
         self.gamma_table = GammaTable()
+        self.progress(1)
         self.init_hardware()
         self.clock_led = True  # display clock on addressable leds
         self.humidity_led = False  # display humidity on addressable leds
         self.temperature_led = False  # display temperature on addressable leds
         self.pressure_led = False  # display pressure on addressable leds
         self.get_sensor_data()
-
+        self.progress(1)
         self.buzzer_active = True
         self.controller_reset = False
         self.tft_refresh = True
@@ -169,16 +169,14 @@ class Controller(Led):
             self.tft.fill(0)
             self.tft.text('Initialization', 24, 52, tft.rgb(r,g,b))
         else:
-            print(self.n)
-            self.tft.text('#', 16+9*self.n, 62, tft.rgb(r,g,b))
+            self.tft.text('#', 4+9*self.n, 62, tft.rgb(r,g,b))
         self.tft.show()
 
 
     # hardware initialization section
     def init_hardware(self):
 
-        self.set_tft()
-        self.progress(0)
+        self.progress(1)
         self.gc_mem_free()
         self.set_i2c()
         self.progress(1)
@@ -198,7 +196,6 @@ class Controller(Led):
         self.progress(1)
         self.gc_collect()
         self.display_refresh = True
-
     def set_tft(self):
         # LCD TFT display configuration
         dc = Pin(2, Pin.OUT, value=1)  # Arbitrary pins
@@ -211,11 +208,6 @@ class Controller(Led):
         # On st7735r 1.8 inch display can exchange height and width for portrait mode. See docs.
         # Released under the MIT License (MIT). See LICENSE.
         # Copyright (c) 2020 Peter Hinch
-        # Initialise and clear display.
-    #    self.tft.fill(0)
-    #    self.tft.text('Initialization...', 12, 56, self.tft.rgb(240, 140, 15))
-    #    self.tft.show()
-
     def set_i2s(self):
         # setup i2s bus and microphone
         SAMPLE_RATE = 32000
