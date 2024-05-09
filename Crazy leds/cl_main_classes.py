@@ -1,5 +1,7 @@
 from machine import Pin, SoftI2C, I2S, SPI, RTC, freq, PWM
-from cl_display import tft
+#from cl_display import tft
+from lib.st7735r import ST7735R as TFT
+
 import gc
 from lib.switches import Button, RotaryEncoder
 from cl_palettes import Palette, GammaTable
@@ -139,8 +141,7 @@ class Controller(Led):
     def __init__(self):
         # set the CPU frequency to 240 MHz
         freq(240000000)
-        self.tft = tft
-
+        self.tft = None
         self.tft_active = True
         self.tft_brightness = 7
         self.tft_active = True
@@ -159,47 +160,54 @@ class Controller(Led):
 
     def progress(self, n):
         # Initialise and clear display.
-        r, g, b = normal_palettes[0][n * 10]
         if n == 0:
+            self.n = 0
+        else:
+            self.n += n
+        r, g, b = normal_palettes[1][self.n * 5]
+        if self.n == 0:
             self.tft.fill(0)
             self.tft.text('Initialization', 24, 52, tft.rgb(r,g,b))
         else:
-            self.tft.text('#', 24+9*n, 62, tft.rgb(r,g,b))
+            print(self.n)
+            self.tft.text('#', 16+9*self.n, 62, tft.rgb(r,g,b))
         self.tft.show()
 
 
     # hardware initialization section
     def init_hardware(self):
+
+        self.set_tft()
         self.progress(0)
         self.gc_mem_free()
         self.set_i2c()
         self.progress(1)
         self.set_ds()
-        self.progress(2)
+        self.progress(1)
         self.set_bme()
-        self.progress(3)
+        self.progress(1)
         self.set_i2s()
-        self.progress(4)
+        self.progress(1)
         self.set_buzzer()
-        self.progress(5)
+        self.progress(1)
         self.set_buttons()
-        self.progress(6)
+        self.progress(1)
         self.set_led1()
-        self.progress(7)
+        self.progress(1)
         self.set_led2()
-        self.progress(8)
+        self.progress(1)
         self.gc_collect()
         self.display_refresh = True
 
-    #def set_tft(self):
-    #    # LCD TFT display configuration
-    #    dc = Pin(2, Pin.OUT, value=1)  # Arbitrary pins
-    #    cs = Pin(5, Pin.OUT, value=1)
-    #    rst = Pin(4, Pin.OUT, value=1)
-    #    # Hardware SPI on native pins for performance. Check DRIVERS.md for optimum baudrate.
-    #    spi = SPI(2, 60_000_000, sck=Pin(18), mosi=Pin(23), miso=Pin(19))
-    #    gc.collect()
-    #    self.tft = TFT(spi, cs, dc, rst)
+    def set_tft(self):
+        # LCD TFT display configuration
+        dc = Pin(2, Pin.OUT, value=1)  # Arbitrary pins
+        cs = Pin(5, Pin.OUT, value=1)
+        rst = Pin(4, Pin.OUT, value=1)
+        # Hardware SPI on native pins for performance. Check DRIVERS.md for optimum baudrate.
+        spi = SPI(2, 60_000_000, sck=Pin(18), mosi=Pin(23), miso=Pin(19))
+        gc.collect()
+        self.tft = TFT(spi, cs, dc, rst)
         # On st7735r 1.8 inch display can exchange height and width for portrait mode. See docs.
         # Released under the MIT License (MIT). See LICENSE.
         # Copyright (c) 2020 Peter Hinch
@@ -285,6 +293,7 @@ class Controller(Led):
         # LED strip object initialization
         el_leds = Aleds(27, el_mv, 72, bpp=3, order=[1, 0, 2, 3])  # init of elephant lamp NeoPix object
         # Segments of the elefant lamp
+        self.progress(1)
         seg0 = Segment(0, el_leds_buffer[:],el_leds, True)  # all
         seg1 = Segment(1, el_leds_buffer[:36],el_leds)  # circle
         seg2 = Segment(2, el_leds_buffer[36:48],el_leds)  # elephants
@@ -297,7 +306,7 @@ class Controller(Led):
         if self.gamma == True:
             self.led1.led_palette = self.gamma_table.gamma_cor(self.led1.led_palette)
             self.led1.led_palette_gamma_corrected = True
-
+        self.progress(1)
         ## print(self.led1.led_palette) # after gamma - debug purposes only
         # aled_fill black (turn off) all leds
         self.led1.aled_object.aled_fast_fill(self.led1.led_buffer, (72 * 3) // 4, 0)
@@ -310,6 +319,7 @@ class Controller(Led):
         tl_mv = memoryview(tl_leds_buffer)
         # LED strip object initialization
         tl_leds = Aleds(0, tl_mv, 428, bpp=3, order=[1, 0, 2, 3])  # init of three led lines NeoPix object
+        self.progress(1)
         # Segments of the three led lines
         seg5 = Segment(5, tl_leds_buffer[:], tl_leds)  # all leds
         seg6 = Segment(6, tl_leds_buffer[:140], tl_leds)  # first line
@@ -318,9 +328,11 @@ class Controller(Led):
         seg9 = Segment(9, [seg6, seg7, seg8], tl_leds,True)  # matrix
         # set led2 lamp object
         self.led2 = Led(2, [seg5, seg6, seg7, seg8, seg9], tl_leds)
+
         # gamma correction of the palette
         if self.gamma == True:
             self.led2.led_palette = self.gamma_table.gamma_cor(self.led2.led_palette)
+        self.progress(1)
         # aled_fill black (turn off) all leds
         self.led2.aled_object.aled_fast_fill(self.led2.led_buffer, (144 * 3 * 3) // 4, 0)
         self.led2.aled_object.write()
