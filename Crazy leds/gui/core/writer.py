@@ -24,21 +24,76 @@
 import framebuf
 from uctypes import bytearray_at, addressof
 from sys import implementation
-import os
+from array import array
 
 __version__ = (0, 5, 1)
 
 fast_mode = True  # Does nothing. Kept to avoid breaking code.
+
+def _get_id(device):
+    if not isinstance(device, framebuf.FrameBuffer):
+        raise ValueError('Device must be derived from FrameBuffer.')
+    return id(device)
+
+def circle(dev, x0, y0, r, color, _=1):  # Draw circle
+    x, y, r = int(x0), int(y0), int(r)
+    dev.ellipse(x, y, r, r, color)
+
+
+def fillcircle(dev, x0, y0, r, color):  # Draw filled circle
+    x, y, r = int(x0), int(y0), int(r)
+    dev.ellipse(x, y, r, r, color, True)
+
+def draw_circle_segment(dev, x, y, r, start, end, color):
+    for angle in range(start, end + 1):
+        x_offset = r * cos(radians(angle))
+        y_offset = r * sin(radians(angle))
+        dev.pixel(x + round(x_offset), y + round(y_offset), color)
+    '''
+        x: współrzędna x środka okręgu
+        y: współrzędna y środka okręgu
+        r: promień okręgu
+        start: początkowy kąt wycinka okręgu (w stopniach)
+        end: końcowy kąt wycinka okręgu (w stopniach)
+    '''
+
+def crect(x, y, w, h):
+    c = 4  # Clip pixels
+    return array(
+        "H",
+        (
+            x + c,
+            y,
+            x + w - c,
+            y,
+            x + w,
+            y + c,
+            x + w,
+            y + h - c,
+            x + w - c,
+            y + h,
+            x + c,
+            y + h,
+            x,
+            y + h - c,
+            x,
+            y + c,
+        ),
+    )
+
+
+def clip_rect(dev, x, y, w, h, color):
+    dev.poly(0, 0, crect(x, y, w, h), color)
+
+def fill_clip_rect(dev, x, y, w, h, color):
+    dev.poly(0, 0, crect(x, y, w, h), color, True)
 
 class DisplayState():
     def __init__(self):
         self.text_row = 0
         self.text_col = 0
 
-def _get_id(device):
-    if not isinstance(device, framebuf.FrameBuffer):
-        raise ValueError('Device must be derived from FrameBuffer.')
-    return id(device)
+
 
 # Basic Writer class for monochrome displays
 class Writer():

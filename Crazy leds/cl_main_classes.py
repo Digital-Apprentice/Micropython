@@ -10,9 +10,7 @@ from ulab import numpy as np  # !!! uncoment after finishing code)
 #import numpy as np   # comment after writing the code - only for Pycharm
 from cl_palettes import normal_palettes, gradient_palettes  # imports variables containing color palettes
 from cl_palettes import red, green, blue, white, black, yellow, cyan, magenta, purple, orange, def_colors
-
-from cl_display import tft
-import uasyncio as asyncio
+#import uasyncio as asyncio
 import time
 from gui.core.writer import CWriter
 ### from el_effects import Effects
@@ -164,12 +162,12 @@ class Controller(Led):
             self.n = 0
         else:
             self.n += n
-        r, g, b = normal_palettes[1][self.n * 5]
+        #r, g, b = normal_palettes[1][self.n * 5]
         if self.n == 0:
             self.tft.fill(0)
-            self.tft.text('Initialization', 24, 52, tft.rgb(r,g,b))
+            self.tft.text('Initialization', 24, 52, self.tft.rgb(normal_palettes[1][self.n * 5]))
         else:
-            self.tft.text('#', 4+9*self.n, 62, tft.rgb(r,g,b))
+            self.tft.text('#', 4+9*self.n, 62, self.tft.rgb(normal_palettes[1][self.n * 5]))
         self.tft.show()
 
 

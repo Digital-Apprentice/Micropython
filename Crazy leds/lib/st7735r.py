@@ -48,7 +48,7 @@ class ST7735R(framebuf.FrameBuffer):
     # Convert r, g, b in range 0-255 to an 8 bit colour value
     # rrrgggbb. Converted to 12 bit on the fly.
     @staticmethod
-    def rgb(r, g, b):
+    def rgb((r, g, b)):
         return (r & 0xe0) | ((g >> 3) & 0x1c) | (b >> 6)
 
     # rst and cs are active low, SPI is mode 0

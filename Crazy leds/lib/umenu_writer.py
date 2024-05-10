@@ -3,22 +3,20 @@ try:
 except ImportError:
     CENTER = 1
     RIGHT = 2
-
+from array import array
 # updated Pawel Lugowski's umenu system (https://github.com/plugowski/umenu)
 # with Peter Hinch's writer library and st7735r driver (https://github.com/peterhinch/micropython-font-to-py)
 # writer library allows rendering text to a monochrome or colour display having a suitable device driver
 # used TFT 1,8' (160x128) display
-from gui.core.nanogui import refresh, circle, fillcircle, clip_rect, fill_clip_rect, draw_circle_segment
 from gui.core.writer import CWriter
-from gui.widgets.label import Label
 
 def menu_parameters(display, writer, x0, y0, line_height, m_width, per_page, v_padding):  
     # format: self.display, self.writer,self.x0,self.y0,self.line_height,self.m_width,self.per_page,self.v_padding)
     global m_params
     m_params = [display, writer, x0, y0, line_height, m_width, per_page, v_padding]
 
-def active_item_value(y_v_padding):
-    # cross method for passing active item value
+def active_item_v_pos(y_v_padding):
+    # cross method for passing active item vertical position
     global a_i_value
     a_i_value = y_v_padding
 
@@ -28,8 +26,6 @@ def active_item_value(y_v_padding):
 def rgb2rgb444(color):
     r,g,b = color
     return (r & 0xe0) | ((g >> 3) & 0x1c) | (b >> 6)
-
-
 
 class MenuItem():
 
@@ -383,10 +379,10 @@ class MenuScreen:
 class Menu:
     current_screen = None  # type: MenuScreen | CustomItem
 
-    def __init__(self, display,writer,font, per_page: int = 4, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True):
+    def __init__(self, display,writer,per_page: int = 4, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True):
 
         self.display = display  # display driver
-        self.writer = writer  # CWriter(display, font, self.fgcolor,self.bgcolor,verbose=True)
+        self.writer = writer  # CWriter(display,font, self.fgcolor,self.bgcolor,verbose=True)
         self.writer.set_clip(True, True, False)
         # colors defined in writer
         self.fgcolor = self.writer.fgcolor
@@ -439,7 +435,7 @@ class Menu:
             self.current_screen.draw()
             return
 
-        self.display.aled_fill(0)
+        self.display.fill(0)
         if self.menu_header: self._menu_header(self.current_screen.title)
 
         elements = self.current_screen.count()
@@ -490,7 +486,7 @@ class Menu:
         y_v_padding = y + v_padding
         if item.is_active:
             background = self.fgcolor
-            active_item_value(y_v_padding) # a_i_value method format: y_v_padding
+            active_item_v_pos(y_v_padding) # a_i_value method format: y_v_padding
         else:
             background = self.bgcolor
         self.display.fill_rect(self.x0, y, self.m_width, self.line_height, background)
