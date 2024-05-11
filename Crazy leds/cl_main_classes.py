@@ -304,7 +304,7 @@ class Controller(Led):
 
     def set_led2(self):
         # led2 buffer
-        tl_leds_buffer = np.array(428 * [[0, 0, 0]], dtype=np.uint8)
+        tl_leds_buffer = np.array(144*3 * [[0, 0, 0]], dtype=np.uint8)
         # memoryview of the buffers
         tl_mv = memoryview(tl_leds_buffer)
         # LED strip object initialization
@@ -363,7 +363,7 @@ class Controller(Led):
         self.seconds = 0
 
     def get_rtc_time(self):
-        self.datetime_now = self.ds.datetime()
+        self.datetime_now = self.rtc.datetime()
         # self.hour = self.datetime_now[4]
         # self.second = self.datetime_now[6]
         # self.day = self.datetime_now[2]

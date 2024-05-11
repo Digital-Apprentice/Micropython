@@ -20,6 +20,8 @@ class Aleds():
         self.set_buffer(buffer) # set buffer and their address, buffer is a memory view object or ndarray slice from numpy, or ndarray or array (bytearray format object)
         self.n = n
         self.bpp = bpp
+        self.aled_buffer_len = len(buffer)
+        self.aled_buffer_ff_len = self.aled_buffer_len // 4
         self.timing = (400, 850, 800, 450) #option omitted (((400, 850, 800, 450) if timing else (800, 1700, 1600, 900))
             #if isinstance(timing, int) else timing)
 
@@ -27,7 +29,6 @@ class Aleds():
     def set_buffer(self, buffer):
         self.aled_buffer = buffer  # buffer is a memory view object or ndarray slice from numpy, or ndarray or array (bytearray format object
         self.aled_buffer_addr = uctypes.addressof(buffer)  # uctypes.addressof(buffer) returns the address of the buffer
-
     def __setitem__(self, i, c):  # v = trzy bajty koloru w odpowiednim porządku, bez sprawdzania i przestawiania danych
         self.aled_buffer[self.aled_buffer_addr + (i * self.bpp)] = c
 
@@ -40,7 +41,7 @@ class Aleds():
     @micropython.viper
     # fast filling with desired 32bit word as value
     # desired 32bit word, -1 give 0xffffffff, 0 give 0x00000000
-    def aled_fast_fill(self, ba: ptr32, ba_len: int, value: int):
+    def aled_fast_fill(self, ba: ptr32, ba_len: int , value: int):
         for i in range(ba_len):
             ba[i] = value
 

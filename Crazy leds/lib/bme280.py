@@ -270,7 +270,7 @@ class BME280:
     
   @property
   def pressure(self):
-    "Return the temperature in hPa."
+    "Return the pressure in hPa."
     p = self.read_pressure() // 256
     #pi = p // 100
     #pd = p - pi * 100
