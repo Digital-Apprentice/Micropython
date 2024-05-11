@@ -276,7 +276,7 @@ class BME280:
     #pd = p - pi * 100
     #return "{}.{:02d}hPa".format(pi, pd)
     self.p = round(p/100,0)
-    return self.p
+    return int(self.p)
 
   @property
   def humidity(self):

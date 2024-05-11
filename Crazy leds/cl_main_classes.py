@@ -19,7 +19,7 @@ from gui.core.writer import CWriter
 def_colors.extend(['R', 'RM'])
 
 
-# tft, bme, ds, rtc, buzzer, mv_raw_sound_samples,
+# display, bme, ds, rtc, buzzer, mv_raw_sound_samples,
 
 
 class Segment():
@@ -144,10 +144,12 @@ class Controller(Led):
         self.first_run = True
         self.ds_set = False
         self.rtc_set = False
-        self.tft = None
-        self.tft_brightness = 7
-        self.tft_active = True
-        self.set_tft()
+        self.time_refreshed = False
+        self.sensor_refreshed = False
+        self.display = None
+        self.display_brightness = 7
+        self.display_active = True
+        self.set_display()
         self.progress(0)
         self.set_initial_date_and_time()
         self.gamma = True
@@ -160,7 +162,7 @@ class Controller(Led):
         self.pressure_led = False  # display pressure on addressable leds
         self.buzzer_active = True
         self.controller_reset = False
-        self.tft_refresh = True
+        self.display_refresh = True
         self.progress(1)
         
     def progress(self, n):
@@ -171,11 +173,11 @@ class Controller(Led):
             self.n += n
         # r, g, b = normal_palettes[1][self.n * 5]
         if self.n == 0:
-            self.tft.fill(0)
-            self.tft.text('Initialization', 24, 52, self.tft.rgb(normal_palettes[1][self.n * 5]))
+            self.display.fill(0)
+            self.display.text('Initialization', 24, 52, self.display.rgb(normal_palettes[1][self.n * 5]))
         else:
-            self.tft.text('#', 4 + 9 * self.n, 62, self.tft.rgb(normal_palettes[1][self.n * 5]))
-        self.tft.show()
+            self.display.text('#', 4 + 9 * self.n, 62, self.display.rgb(normal_palettes[1][self.n * 5]))
+        self.display.show()
 
     # hardware initialization section
     def init_hardware(self):
@@ -203,7 +205,7 @@ class Controller(Led):
         self.gc_collect()
         self.display_refresh = True
 
-    def set_tft(self):
+    def set_display(self):
         # LCD TFT display configuration
         dc = Pin(2, Pin.OUT, value=1)  # Arbitrary pins
         cs = Pin(5, Pin.OUT, value=1)
@@ -211,7 +213,7 @@ class Controller(Led):
         # Hardware SPI on native pins for performance. Check DRIVERS.md for optimum baudrate.
         spi = SPI(2, 60_000_000, sck=Pin(18), mosi=Pin(23), miso=Pin(19))
         gc.collect()
-        self.tft = TFT(spi, cs, dc, rst)
+        self.display = TFT(spi, cs, dc, rst)
         # On st7735r 1.8 inch display can exchange height and width for portrait mode. See docs.
         # Released under the MIT License (MIT). See LICENSE.
         # Copyright (c) 2020 Peter Hinch
@@ -257,8 +259,8 @@ class Controller(Led):
     def set_bme(self):
         # global bme
         # BME280 sensor initialization
-        self.bme = BME280(i2c=self.i2c)  # temperature, humidity and pressure sensor
         try:
+            self.bme = BME280(i2c=self.i2c)  # temperature, humidity and pressure sensor
             self.temperature = self.bme.temperature
             self.humidity = self.bme.humidity
             self.pressure = self.bme.pressure
@@ -269,6 +271,7 @@ class Controller(Led):
         # DS3231 & RTC initialization
         self.ds = DS3231(self.i2c)    # real time clock
         try:
+            self.ds = DS3231(self.i2c)  # real time clock
             # datetime get format = (year, month, monthday, weekday, hour, minute, second, 0)
             self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds,_ = self.ds.datetime()
             self.ds_set = True
@@ -366,6 +369,13 @@ class Controller(Led):
 
     def gc_mem_free(self):
         gc.mem_free()  # free memory
+    def beep(self, duration=10):
+        if self.buzzer_active:
+            self.buzzer.on()
+            time.sleep_ms(duration)
+            self.buzzer.off()
+        else:
+            return  # exit from the function
 
     # sensor section:
     def get_sensor_data(self):
@@ -392,9 +402,9 @@ class Controller(Led):
             self.temperature = t
             self.humidity = h
             self.pressure = p
-            self.display_refresh = True
+            self.sensor_refreshed = True
         else:
-            self.display_refresh = False
+            self.sensor_refreshed = False
 
     # date and time section:
     def leap_year(self, year):
@@ -442,13 +452,6 @@ class Controller(Led):
         except:
             self.rtc_set_flag = False
 
-    def beep(self, duration=10):
-        if self.buzzer_active:
-            self.buzzer.on()
-            time.sleep_ms(duration)
-            self.buzzer.off()
-        else:
-            return  # exit from the function
 
     def set_initial_date_and_time(self):
         self.year = 2024
@@ -465,15 +468,26 @@ class Controller(Led):
         # self.day = self.datetime_now[2]
         # self.month = self.datetime_now[1]
         # self.year = self.datetime_now[0]
+
         if self.seconds != datetime_now[6]:
             self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, _ = datetime_now
-            self.display_refresh = True
+            self.weekday +=1
+            self.time_refreshed = True
+        else:
+            self.time_refreshed = False
     def prefix(self, number):
         if number < 10:
             return '0' + str(number)
         else:
             return str(number)
+
+    def check_flags(self):
+        if self.time_refreshed or self.sensor_refreshed or self.controller_reset:
+            self.display_refresh = True
+
     def get_data(self):
         self.update_time()
         self.get_sensor_data()
+        self.check_flags()
+
 

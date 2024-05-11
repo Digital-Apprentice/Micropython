@@ -9,9 +9,12 @@ import uasyncio as asyncio
 from cl_palettes import red, green, blue, yellow, cyan, magenta, purple, orange, pink, darkslategray, darkgreen, darkblue, darkred, darkorange, darkmagenta, darkcyan, darkviolet, darkyellow, darkyellow2, white, black
 from cl_palettes import full_saturation_spectrum as fss
 import gui.fonts.freesans20 as freesans20
+import gui.fonts.font10 as font10
+import gui.fonts.font6 as font6
+
 import gui.fonts.nasalization_rg20 as nasalization_rg20
 import gui.fonts.nasalization_rg16 as nasalization_rg16
-import gui.fonts.nasalization_rg10 as nasalization_rg10
+import gui.fonts.nasalization_rg12 as nasalization_rg12
 import gui.fonts.arial10 as arial10
 #import gui.fonts.TTOTCL5 as TTOTCL5
 #import gui.fonts.TTOTCL8 as TTOTCL8
@@ -22,23 +25,23 @@ import gui.fonts.TTOTCoL10 as TTOTCoL10
 #import gui.fonts.TTOTCT5 as TTOTCT5
 import gui.fonts.TTOTDB16 as TTOTDB16
 import gui.fonts.TTOTDB20 as TTOTDB20
-wr_menu = CWriter(c.tft, arial10, fgcolor=c.tft.rgb(darkyellow), bgcolor=c.tft.rgb(black), verbose=False)
-wr_hour = CWriter(c.tft, nasalization_rg20, fgcolor=c.tft.rgb(fss[3]), bgcolor=c.tft.rgb(black), verbose=False)
-wr_sensor = CWriter(c.tft, nasalization_rg16, fgcolor=c.tft.rgb(white), bgcolor=c.tft.rgb(black), verbose=False)
-wr_date = CWriter(c.tft, arial10, fgcolor=c.tft.rgb(cyan), bgcolor=c.tft.rgb(black), verbose=False)
-#wr1 = CWriter(c.tft, TTOTCL5, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-#wr2 = CWriter(c.tft, TTOTCL8, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-wr3 = CWriter(c.tft, TTOTCL10, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-#wr4 = CWriter(c.tft, TTOTCoL5, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-#wr5 = CWriter(c.tft, TTOTCoL8, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-wr6 = CWriter(c.tft, TTOTCoL10, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-#wr7 = CWriter(c.tft, TTOTCT5, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-wr8 = CWriter(c.tft, TTOTDB16, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
-wr9 = CWriter(c.tft, TTOTDB20, fgcolor=c.tft.rgb(white),bgcolor=c.tft.rgb(black),verbose=False)
+wr_menu = CWriter(c.display, arial10, fgcolor=c.display.rgb(darkyellow), bgcolor=c.display.rgb(black), verbose=False)
+wr_hour = CWriter(c.display, nasalization_rg20, fgcolor=c.display.rgb(fss[3]), bgcolor=c.display.rgb(black), verbose=False)
+wr_sensor = CWriter(c.display,TTOTCoL10, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
+wr_date = CWriter(c.display, arial10, fgcolor=c.display.rgb(cyan), bgcolor=c.display.rgb(black), verbose=False)
+#wr1 = CWriter(c.display, TTOTCL5, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+#wr2 = CWriter(c.display, TTOTCL8, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+wr3 = CWriter(c.display, TTOTCL10, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+#wr4 = CWriter(c.display, TTOTCoL5, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+#wr5 = CWriter(c.display, TTOTCoL8, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+wr6 = CWriter(c.display, TTOTCoL10, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+#wr7 = CWriter(c.display, TTOTCT5, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+wr8 = CWriter(c.display, TTOTDB16, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+wr9 = CWriter(c.display, TTOTDB20, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
 
 
 #display,writer,per_page: int = 4, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True)
-menu = Menu(c.tft, wr_menu, 5,x0=0,y0=70)
+menu = Menu(c.display, wr_menu, 5,x0=0,y0=70)
 
 
 class DefaultScreen(MenuScreen):
@@ -47,7 +50,7 @@ class DefaultScreen(MenuScreen):
         self.x = 0
         self.y = 0
         self.cp = self._center_point()
-        self.padding = 1
+        self.padding = 2
 
         self.draw_default()
     '''
@@ -64,40 +67,65 @@ class DefaultScreen(MenuScreen):
         return self
 '''
     def draw_default(self):
-        c.tft.fill(0)
+        c.display.fill(0)
         self.clock()
         self.date()
-        c.tft.show()
+        self.sensor()
+        c.display.show()
 
     def draw(self):
         pass
         #self.draw_default()
 
     def clock(self):
-        h, m, s = c.get_time()
-        print(h,m,s)
-        self.cp
-        clock_str = h + ':' + m + ':' + s
-        clock_str_len = wr_hour.stringlen(clock_str)
-        print(clock_str_len)
-        x = self.cp-clock_str_len//2
-        wr_hour.set_textpos(c.tft, x, self.y + self.padding)
-        wr_hour.printstring(clock_str)
-        self.clock_height = wr_hour.font.height()+self.padding
-        clip_rect(c.tft, x - self.padding, self.y, clock_str_len + 2 * self.padding, self.clock_height, c.tft.rgb(fss[int(s)]))
+        clock = c.get_time()
+        half_len = 43
+        x = self.cp - half_len
+        for idx,t in enumerate(clock):
+            for n in t:
+                if int(n) == 1:
+                    wr_hour.set_textpos(c.display, x+3, self.y + self.padding)
+                else:
+                    wr_hour.set_textpos(c.display, x, self.y + self.padding)
+                wr_hour.printstring(n)
+                x += 12
+            wr_hour.set_textpos(c.display, x+2, self.y + self.padding)
+            if idx < 2: wr_hour.printstring(':')
+            x += 6
+        self.clock_height = wr_hour.font.height()
+        c.display.hline(self.cp - half_len, self.clock_height, 2*half_len, c.display.rgb(fss[int(50)]))
+        self.clock_height += self.padding
 
     def date(self):
         d, m, y, w = c.get_date()
-        date_str = w +','+ d + '.' + m + '.' + y
+        date_str = w + '  ' + d + '.' + m + '.' + y
         date_str_len = wr_date.stringlen(date_str)
         x = self.cp-date_str_len//2
         y = self.y + self.clock_height
-        wr_date.set_textpos(c.tft, x, y + self.padding)
+        wr_date.set_textpos(c.display, x, y + self.padding)
         wr_date.printstring(date_str)
         self.date_height = wr_date.font.height()+self.padding
 
-    def _center_point(self):
-        xc = (c.tft.width - self.x) // 2
+    def sensor(self):
+        t_str = 'T:  ' + str(c.temperature) + '  °C'
+        h_str = 'H:  ' + str(c.humidity) + '   %'
+        p_str = 'P:  ' + str(c.pressure) + ' hPa'
+        fg_color = c.display.rgb(black)
+        bg_color = c.display.rgb(fss[int(c.pressure/c.temperature)])
+        x = self.cp-28
+        y = self.y + self.clock_height + self.date_height
+        fill_clip_rect(c.display, x-7 , y, 60 + 4*self.padding, 3 * wr_sensor.font.height() + self.padding,bg_color)
+        wr_sensor.setcolor(fg_color,bg_color)
+        for idx,data in enumerate ((t_str,h_str,p_str)):
+            wr_sensor.set_textpos(c.display, x, y + idx*wr_sensor.font.height()+self.padding)
+            wr_sensor.printstring(data)
+            #if idx < 2: c.display.hline(x,  y + (idx+1) * wr_sensor.font.height()+self.padding//2, 54, c.display.rgb(white))
+            print(y + idx * wr_sensor.font.height() + self.padding)
+        print('3',y + 3 * wr_sensor.font.height() + self.padding)
+        #self.sensor_height = wr_sensor.font.height()+self.padding
+
+    def _center_point(self,width=c.display.width):
+        xc = (width - self.x) // 2
         return xc
 
 
@@ -111,121 +139,29 @@ class DrawCustomScreen(CustomItem):
         return self.parent  # this is needed to go back to previous view when SET button is pushed
 
     def draw(self):
-        c.tft.fill(0)
-        c.tft.rect(0, 0, c.tft.width, c.tft.height, c.tft.rgb(magenta))
-        c.tft.text('inny tekst', 0, 10, c.tft.rgb(darkred))
-        c.tft.hline(0, 32, c.tft.width, c.tft.rgb(magenta))
-        c.tft.show()
+        c.display.fill(0)
+        c.display.rect(0, 0, c.display.width, c.display.height, c.display.rgb(magenta))
+        c.display.text('inny tekst', 0, 10, c.display.rgb(darkred))
+        c.display.hline(0, 32, c.display.width, c.display.rgb(magenta))
+        c.display.show()
 
-
-menu.set_screen(DefaultScreen('Main Menu')
+def menu_set():
+    menu.set_screen(DefaultScreen('Main Menu')
                 .add(DrawCustomScreen('H: 47,5%'))
                 )
-menu.draw()
+    menu.draw()
 
-'''
-class MainScreen(CustomItem):
-    def __init__(self, name):
-        super().__init__(name)
-        self._menu = None
-
-    def bottom_menu(self,btm_no):
-        btm_list = [['Effects','Elephants','TLines','Settings'],['','+1','+10','Back'],['Auto','Manual','','Back']]
-        return btm_list[btm_no]
-
-    def time_date(self, time, date):
-
-        wr_hour.set_textpos(0, 0)
-        wr_hour.printstring('12:34:56')
-        wr_date.set_textpos(0, 100)
-        wr_date.printstring(str(c.day) + '.' + str(c.month) + '.' + str(c.year))
-
-
-class EffectList(CustomItem):
-
-    def __init__(self, name):
-        super().__init__(name)
-        self._menu = None
-
-    def prepare_list(self):
-        import os
-        files = os.listdir()
-        self._menu = Menu(c.tft, wr1, arial10, per_page = 4,x0 = 40, y0 = 20,m_width = 120)
-        builder = MenuScreen('Files', self.parent)
-        for file in files:
-            builder.add(FilePreview(file))
-        self._menu.set_screen(builder)
-
-    def up(self):
-        self._menu.move(-1)
-
-    def down(self):
-        self._menu.move()
-
-    def select(self):
-        self._menu.click()
-        return self
-
-    def draw(self):
-        if self._menu is None:
-            self.prepare_list()
-        self._menu.draw()
-
-
-
-
-
-
-
-class ParamsList(CustomItem):
-
-    def __init__(self, name):
-        super().__init__(name)
-        self._menu = None
-
-    def prepare_list(self):
-        files = os.listdir()
-        self._menu = Menu(c.tft, wr_menu, arial10, per_page = 4,x0 = 40, y0 = 20,m_width = 120)
-        builder = MenuScreen('Parameters', self.parent)
-        for file in files:
-            builder.add(FilePreview(file))
-        self._menu.set_screen(builder)
-
-    def up(self):
-        self._menu.move(-1)
-
-    def down(self):
-        self._menu.move()
-
-    def select(self):
-        self._menu.click()
-        return self
-
-    def draw(self):
-        if self._menu is None:
-            self.prepare_list()
-        self._menu.draw()
-
-
-
-menu = Menu(c.tft, wr1, arial10, per_page = 1,x0 = 0, y0 = 0,menu_header=False)
-menu.set_screen(MenuScreen('').add(MainScreen('Show files')))
-menu.draw()
-'''
 
 async def switch_handler():
-
 
     r = c.encoder
     while True:
         if c.display_refresh:  # display refresh is needed
-            
-            print(c.hour,c.minutes,c.seconds,c.year,c.month,c.day,c.weekday)
-            print('ds',c.ds_set,'   rtc  ',c.rtc_set)
-            menu.draw()
+            #print(c.hour,c.minutes,c.seconds,c.year,c.month,c.day,c.weekday)
             c.get_sensor_data()
-            print(c.temperature,c.humidity,c.pressure)
+            #print(c.temperature,c.humidity,c.pressure)
             c.display_refresh = False
+            menu_set()
         if r.value() != 0:
             menu.move(r.value())
             r.value(0)
@@ -357,3 +293,92 @@ class Menu(object):
 '''
 
 
+'''
+class MainScreen(CustomItem):
+    def __init__(self, name):
+        super().__init__(name)
+        self._menu = None
+
+    def bottom_menu(self,btm_no):
+        btm_list = [['Effects','Elephants','TLines','Settings'],['','+1','+10','Back'],['Auto','Manual','','Back']]
+        return btm_list[btm_no]
+
+    def time_date(self, time, date):
+
+        wr_hour.set_textpos(0, 0)
+        wr_hour.printstring('12:34:56')
+        wr_date.set_textpos(0, 100)
+        wr_date.printstring(str(c.day) + '.' + str(c.month) + '.' + str(c.year))
+
+
+class EffectList(CustomItem):
+
+    def __init__(self, name):
+        super().__init__(name)
+        self._menu = None
+
+    def prepare_list(self):
+        import os
+        files = os.listdir()
+        self._menu = Menu(c.display, wr1, arial10, per_page = 4,x0 = 40, y0 = 20,m_width = 120)
+        builder = MenuScreen('Files', self.parent)
+        for file in files:
+            builder.add(FilePreview(file))
+        self._menu.set_screen(builder)
+
+    def up(self):
+        self._menu.move(-1)
+
+    def down(self):
+        self._menu.move()
+
+    def select(self):
+        self._menu.click()
+        return self
+
+    def draw(self):
+        if self._menu is None:
+            self.prepare_list()
+        self._menu.draw()
+
+
+
+
+
+
+
+class ParamsList(CustomItem):
+
+    def __init__(self, name):
+        super().__init__(name)
+        self._menu = None
+
+    def prepare_list(self):
+        files = os.listdir()
+        self._menu = Menu(c.display, wr_menu, arial10, per_page = 4,x0 = 40, y0 = 20,m_width = 120)
+        builder = MenuScreen('Parameters', self.parent)
+        for file in files:
+            builder.add(FilePreview(file))
+        self._menu.set_screen(builder)
+
+    def up(self):
+        self._menu.move(-1)
+
+    def down(self):
+        self._menu.move()
+
+    def select(self):
+        self._menu.click()
+        return self
+
+    def draw(self):
+        if self._menu is None:
+            self.prepare_list()
+        self._menu.draw()
+
+
+
+menu = Menu(c.display, wr1, arial10, per_page = 1,x0 = 0, y0 = 0,menu_header=False)
+menu.set_screen(MenuScreen('').add(MainScreen('Show files')))
+menu.draw()
+'''
