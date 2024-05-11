@@ -1,4 +1,4 @@
-from machine import Pin, SoftI2C, I2S, SPI, RTC, freq
+from machine import Pin, SoftI2C, I2S, SPI, RTC, Timer, freq
 import gc
 from lib.st7735r import ST7735R as TFT
 from lib.switches import Button, RotaryEncoder
@@ -7,40 +7,42 @@ from lib.bme280 import BME280
 from lib.ds3231 import DS3231
 from cl_adr_leds import Aleds
 from ulab import numpy as np  # !!! uncoment after finishing code)
-#import numpy as np   # comment after writing the code - only for Pycharm
+# import numpy as np   # comment after writing the code - only for Pycharm
 from cl_palettes import normal_palettes, gradient_palettes  # imports variables containing color palettes
 from cl_palettes import red, green, blue, white, black, yellow, cyan, magenta, purple, orange, def_colors
-#import uasyncio as asyncio
+# import uasyncio as asyncio
 import time
 from gui.core.writer import CWriter
+
 ### from el_effects import Effects
 
-def_colors.extend(['R','RM'])
-#tft, bme, ds, rtc, buzzer, mv_raw_sound_samples,
+def_colors.extend(['R', 'RM'])
+
+
+# tft, bme, ds, rtc, buzzer, mv_raw_sound_samples,
 
 
 class Segment():
 
-    def __init__(self, id, segment, aled, active = False):
+    def __init__(self, id, segment, aled, active=False):
         self.id = id
         self.segment = segment
         self.aled_object = aled
         self.seg_length = len(self.segment)
         self.active = active
 
-        self.seg_palette_active	= False
+        self.seg_palette_active = False
         self.seg_palette_gamma_corrected = False
         self.direction = True  # True means clockwise, False counterclockwise
         # maybe instead of lists use numpy arrays???
-        self.seg_palette = [] #?????
-        self.particles_list = []  #????
+        self.seg_palette = []  # ?????
+        self.particles_list = []  # ????
         self.particle_length_list = []  # ????
-        self.positions_list = [] #????
-        self.intensity_list = [] #????
+        self.positions_list = []  # ????
+        self.intensity_list = []  # ????
 
         self.segment_brightness = 5  # range (0..7), brightness bit shifting adjustments, shif left or right
         self.set_speed()
-
 
     def set_speed(self, speed=10):  # speed 0..10
         self.speed = speed
@@ -60,13 +62,14 @@ class Segment():
         self.seg_palette_active = False
         self.seg_palette_gamma_corrected = False
 
-    def set_segment_brightness(self, brightness):  #0..7
+    def set_segment_brightness(self, brightness):  # 0..7
         self.segment_brightness = brightness
+
 
 class Led(Segment):
     # segments = i.e.[seg0, seg1, seg2, seg3, seg4]
     # first create segment instances and pass as a list to the device
-    def __init__(self, id , segments = None, aled = None):
+    def __init__(self, id, segments=None, aled=None):
         self.id = id
         self.aled_object = aled
         self.segments = segments
@@ -95,24 +98,24 @@ class Led(Segment):
     def check_active_segments(self):
         self.active_segments.clear()
         for _segment in self.segments:
-            self.active_segments.append(_segment.active) # list of active segments
+            self.active_segments.append(_segment.active)  # list of active segments
         return self.active_segments
 
-    def set_active_segment(self, active_segment=0, flag = False):
+    def set_active_segment(self, active_segment=0, flag=False):
         self.check_active_segments()
         active_segments_list_length = len(self.active_segments)
         if flag == True:
             if active_segment == 0:
                 self.active_segments[0] = True
-                for i in range(1,active_segments_list_length):
+                for i in range(1, active_segments_list_length):
                     self.active_segments[i] = False
-            elif 0 < active_segment < active_segments_list_length-1:
+            elif 0 < active_segment < active_segments_list_length - 1:
                 self.active_segments[active_segment] = True
                 self.active_segments[0] = False
                 self.active_segments[-1] = False
-            elif active_segment == active_segments_list_length-1:
+            elif active_segment == active_segments_list_length - 1:
                 self.active_segments[-1] = True
-                for i in range(0,active_segments_list_length-1):
+                for i in range(0, active_segments_list_length - 1):
                     self.active_segments[i] = False
             else:
                 # set all segments as inactive if active_segment not in range
@@ -121,8 +124,8 @@ class Led(Segment):
         else:
             self.active_segments[active_segment] = False
 
-    def set_led_palette(self, pal_length=None, palette_no=0, gradient = False):
-        self.led_palette = Palette(pal_length=None, palette_no=0, gradient = False, order=[1,0,2,3]).palette
+    def set_led_palette(self, pal_length=None, palette_no=0, gradient=False):
+        self.led_palette = Palette(pal_length=None, palette_no=0, gradient=False, order=[1, 0, 2, 3]).palette
         self.led_palette_active = True
         self.led_palette_gamma_corrected = False
 
@@ -130,6 +133,7 @@ class Led(Segment):
         self.led_palette.clear()
         self.led_palette_active = False
         self.led_palette_gamma_corrected = False
+
 
 class Controller(Led):
 
@@ -142,6 +146,7 @@ class Controller(Led):
         self.tft_active = True
         self.set_tft()
         self.progress(0)
+        self.set_initial_date_and_time()
         self.gamma = True
         self.gamma_table = GammaTable()
         self.progress(1)
@@ -150,26 +155,24 @@ class Controller(Led):
         self.humidity_led = False  # display humidity on addressable leds
         self.temperature_led = False  # display temperature on addressable leds
         self.pressure_led = False  # display pressure on addressable leds
-        self.get_sensor_data()
-        self.progress(1)
         self.buzzer_active = True
         self.controller_reset = False
         self.tft_refresh = True
-
+        self.progress(1)
+        
     def progress(self, n):
         # Initialise and clear display.
         if n == 0:
             self.n = 0
         else:
             self.n += n
-        #r, g, b = normal_palettes[1][self.n * 5]
+        # r, g, b = normal_palettes[1][self.n * 5]
         if self.n == 0:
             self.tft.fill(0)
             self.tft.text('Initialization', 24, 52, self.tft.rgb(normal_palettes[1][self.n * 5]))
         else:
-            self.tft.text('#', 4+9*self.n, 62, self.tft.rgb(normal_palettes[1][self.n * 5]))
+            self.tft.text('#', 4 + 9 * self.n, 62, self.tft.rgb(normal_palettes[1][self.n * 5]))
         self.tft.show()
-
 
     # hardware initialization section
     def init_hardware(self):
@@ -191,9 +194,11 @@ class Controller(Led):
         self.set_led1()
         self.progress(1)
         self.set_led2()
+        self.set_timer()
         self.progress(1)
         self.gc_collect()
         self.display_refresh = True
+
     def set_tft(self):
         # LCD TFT display configuration
         dc = Pin(2, Pin.OUT, value=1)  # Arbitrary pins
@@ -206,6 +211,15 @@ class Controller(Led):
         # On st7735r 1.8 inch display can exchange height and width for portrait mode. See docs.
         # Released under the MIT License (MIT). See LICENSE.
         # Copyright (c) 2020 Peter Hinch
+
+    def set_timer(self, period=2000, active=True):
+        # Timer configuration
+        self.timer = Timer(0)
+        if active:
+            self.timer.init(period=period, mode=Timer.PERIODIC, callback=lambda t: self.get_data())
+        else:
+            self.timer.deinit()
+
     def set_i2s(self):
         # setup i2s bus and microphone
         SAMPLE_RATE = 32000
@@ -226,7 +240,7 @@ class Controller(Led):
         )
         NUM_BYTES = BITS // 8
         raw_sound_samples = np.array([0] * SAMPLES_PER_FRAME, dtype=np.uint16)
-        self.mv_raw_sound_samples = memoryview(raw_sound_samples) #  memoryview(raw_sound_samples) - samples buffer
+        self.mv_raw_sound_samples = memoryview(raw_sound_samples)  # memoryview(raw_sound_samples) - samples buffer
 
     def set_i2c(self):
         # I2C interface initialization and pin assignment
@@ -248,16 +262,18 @@ class Controller(Led):
             return 'BME280 ERROR'
 
     def set_ds(self):
-        # DS3231 RTC initialization
-        self.ds = DS3231(self.i2c)  # real time clock
-        #self.ds.alarm_int(1, 2)  # enable alarm interrupt
-        #self.ds.alarm2((2), match=self.ds.AL2_EVERY_M)  # set alarm1 to trigger every minute
-        self.rtc = RTC()
-        self.rtc.datetime(self.ds.datetime())  # set the RTC time to the DS3231 time
-        # format for setting datetime = (year, month, monthday, hour, minute, second, weekday)
-        # format for getting datetime = (year, month, monthday, weekday, hour, minute, second, 0)
-        self.rtc_set_flag = True
-        #self.rtc_set_time = 0
+        # DS3231 & RTC initialization
+        try:
+            self.ds = DS3231(self.i2c)  # real time clock
+            # self.ds.alarm_int(1, 2)  # enable alarm interrupt
+            # self.ds.alarm2((2), match=self.ds.AL2_EVERY_M)  # set alarm1 to trigger every minute
+            self.rtc = RTC()
+            self.rtc.datetime(self.ds.datetime())  # set the DS3231 time to the RTC time
+            # format for setting datetime = (year, month, monthday, hour, minute, second, weekday)
+            # format for getting datetime = (year, month, monthday, weekday, hour, minute, second, 0)
+            self.rtc_set_flag = True
+        except:
+            self.c_set_flag = False
 
     def set_buttons(self):
         # Button configuration
@@ -272,7 +288,8 @@ class Controller(Led):
     def set_buzzer(self):
         # Buzzer configuration
         self.buzzer = Pin(15, Pin.OUT)
-        #self.pwm = PWM(self.buzzer, freq=30, duty_u16=8192)
+        # self.pwm = PWM(self.buzzer, freq=30, duty_u16=8192)
+
     # setup of addressable leds:
     ## led buffers
     def set_led1(self):
@@ -284,11 +301,11 @@ class Controller(Led):
         el_leds = Aleds(27, el_mv, 72, bpp=3, order=[1, 0, 2, 3])  # init of elephant lamp NeoPix object
         # Segments of the elefant lamp
         self.progress(1)
-        seg0 = Segment(0, el_leds_buffer[:],el_leds, True)  # all
-        seg1 = Segment(1, el_leds_buffer[:36],el_leds)  # circle
-        seg2 = Segment(2, el_leds_buffer[36:48],el_leds)  # elephants
-        seg3 = Segment(3, el_leds_buffer[48:],el_leds)  # trees
-        seg4 = Segment(4, [seg1, seg2, seg3],el_leds)  # matrix for future # put matrix from elephants ?!?!?!? #
+        seg0 = Segment(0, el_leds_buffer[:], el_leds, True)  # all
+        seg1 = Segment(1, el_leds_buffer[:36], el_leds)  # circle
+        seg2 = Segment(2, el_leds_buffer[36:48], el_leds)  # elephants
+        seg3 = Segment(3, el_leds_buffer[48:], el_leds)  # trees
+        seg4 = Segment(4, [seg1, seg2, seg3], el_leds)  # matrix for future # put matrix from elephants ?!?!?!? #
         # set led lamp object
         self.led1 = Led(1, [seg0, seg1, seg2, seg3, seg4], el_leds, )
         # gamma correction of the palette
@@ -304,7 +321,7 @@ class Controller(Led):
 
     def set_led2(self):
         # led2 buffer
-        tl_leds_buffer = np.array(144*3 * [[0, 0, 0]], dtype=np.uint8)
+        tl_leds_buffer = np.array(144 * 3 * [[0, 0, 0]], dtype=np.uint8)
         # memoryview of the buffers
         tl_mv = memoryview(tl_leds_buffer)
         # LED strip object initialization
@@ -313,9 +330,10 @@ class Controller(Led):
         # Segments of the three led lines
         seg5 = Segment(5, tl_leds_buffer[:], tl_leds)  # all leds
         seg6 = Segment(6, tl_leds_buffer[:140], tl_leds)  # first line
-        seg7 = Segment(7, tl_leds_buffer[140:280], tl_leds)  # second line, remember to flip (np.flip(seg6,axis=0) segment and pass to the tl_leds_buffer before sending to the led strip
+        seg7 = Segment(7, tl_leds_buffer[140:280],
+                       tl_leds)  # second line, remember to flip (np.flip(seg6,axis=0) segment and pass to the tl_leds_buffer before sending to the led strip
         seg8 = Segment(8, tl_leds_buffer[280:], tl_leds)  # third line
-        seg9 = Segment(9, [seg6, seg7, seg8], tl_leds,True)  # matrix
+        seg9 = Segment(9, [seg6, seg7, seg8], tl_leds, True)  # matrix
         # set led2 lamp object
         self.led2 = Led(2, [seg5, seg6, seg7, seg8, seg9], tl_leds)
 
@@ -335,25 +353,35 @@ class Controller(Led):
 
     # sensor section:
     def get_sensor_data(self):
+        t = self.temperature
+        h = self.humidity
+        p = self.pressure
+
         try:
             t = self.bme.temperature
-            h = self.bme.humidity
-            p = self.bme.pressure
-            if self.temperature != t or self.humidity != h or self.pressure != p:
-                self.temperature = t
-                self.humidity = h
-                self.pressure = p
-                self.display_refresh = True
         except:
-            self.temperature = '-^-'
-            self.humidity = '-^-'
-            self.pressure = '-^-'
+            self.temperature = '---'
+
+        try:
+            h = self.bme.humidity
+        except:
+            self.humidity = '---'
+
+        try:
+            p = self.bme.pressure
+        except:
+            self.pressure = '---'
+
+        if self.temperature != t or self.humidity != h or self.pressure != p:
+            self.temperature = t
+            self.humidity = h
+            self.pressure = p
+            self.display_refresh = True
+        else:
             self.display_refresh = False
 
-
-
     # date and time section:
-    def initial_date_and_time(self):
+    def set_initial_date_and_time(self):
         self.year = 2024
         self.month = 1
         self.day = 1
@@ -363,17 +391,18 @@ class Controller(Led):
         self.seconds = 0
 
     def get_rtc_time(self):
-        self.datetime_now = self.rtc.datetime()
+        datetime_now = self.rtc.datetime()
+
         # self.hour = self.datetime_now[4]
         # self.second = self.datetime_now[6]
         # self.day = self.datetime_now[2]
         # self.month = self.datetime_now[1]
         # self.year = self.datetime_now[0]
-        if self.minutes != self.datetime_now[5]:
-            self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds = self.datetime_now
+        if self.minutes != datetime_now[5]:
+            self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, _ = datetime_now
             self.display_refresh = True
 
-    def leap_year(self,year):
+    def leap_year(self, year):
         return bool((not year % 4) ^ (not year % 100))
 
     def get_month_length(self, month, d=bytearray((31, 0, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31))):
@@ -417,11 +446,11 @@ class Controller(Led):
         self.seconds = seconds
         self.weekday = self.day_of_week(day, month, year)
         try:
-            self.ds.datetime(self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds,0)
+            self.ds.datetime(self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, 0)
             self.rtc.datetime(self.ds.datetime())
-            self.rtc_set_flag = False
-        except:
             self.rtc_set_flag = True
+        except:
+            self.rtc_set_flag = False
 
     def beep(self, duration=10):
         if self.buzzer_active:
@@ -430,3 +459,7 @@ class Controller(Led):
             self.buzzer.off()
         else:
             return  # exit from the function
+
+    def get_data(self):
+        self.get_sensor_data()
+        self.get_rtc_time()
