@@ -141,6 +141,9 @@ class Controller(Led):
     def __init__(self):
         # set the CPU frequency to 240 MHz
         freq(240000000)
+        self.first_run = True
+        self.ds_set = False
+        self.rtc_set = False
         self.tft = None
         self.tft_brightness = 7
         self.tft_active = True
@@ -187,6 +190,7 @@ class Controller(Led):
         self.progress(1)
         self.set_i2s()
         self.progress(1)
+        self.set_rtc()
         self.set_buzzer()
         self.progress(1)
         self.set_buttons()
@@ -212,7 +216,7 @@ class Controller(Led):
         # Released under the MIT License (MIT). See LICENSE.
         # Copyright (c) 2020 Peter Hinch
 
-    def set_timer(self, period=2000, active=True):
+    def set_timer(self, period=1000, active=True):
         # Timer configuration
         self.timer = Timer(0)
         if active:
@@ -263,17 +267,29 @@ class Controller(Led):
 
     def set_ds(self):
         # DS3231 & RTC initialization
+        self.ds = DS3231(self.i2c)    # real time clock
         try:
-            self.ds = DS3231(self.i2c)  # real time clock
+            # datetime get format = (year, month, monthday, weekday, hour, minute, second, 0)
+            self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds,_ = self.ds.datetime()
+            self.ds_set = True
+        except:
+            self.set_initial_date_and_time()
+            self.ds_set = False
+
             # self.ds.alarm_int(1, 2)  # enable alarm interrupt
             # self.ds.alarm2((2), match=self.ds.AL2_EVERY_M)  # set alarm1 to trigger every minute
-            self.rtc = RTC()
+
+    def set_rtc(self):
+        self.rtc = RTC()
+        try:
             self.rtc.datetime(self.ds.datetime())  # set the DS3231 time to the RTC time
-            # format for setting datetime = (year, month, monthday, hour, minute, second, weekday)
-            # format for getting datetime = (year, month, monthday, weekday, hour, minute, second, 0)
-            self.rtc_set_flag = True
+            # datetime get format = (year, month, monthday, weekday, hour, minute, second, 0)
+            self.rtc_set = True
         except:
-            self.c_set_flag = False
+            self.set_initial_date_and_time()
+            self.rtc.datetime((self.year, self.month, self.day,self.day_of_week(self.day,self.month,self.year) , 0, 0, 0, 0))
+            self.rtc_set_flag = True
+
 
     def set_buttons(self):
         # Button configuration
@@ -381,27 +397,6 @@ class Controller(Led):
             self.display_refresh = False
 
     # date and time section:
-    def set_initial_date_and_time(self):
-        self.year = 2024
-        self.month = 1
-        self.day = 1
-        self.weekday = 0
-        self.hour = 0
-        self.minutes = 0
-        self.seconds = 0
-
-    def get_rtc_time(self):
-        datetime_now = self.rtc.datetime()
-
-        # self.hour = self.datetime_now[4]
-        # self.second = self.datetime_now[6]
-        # self.day = self.datetime_now[2]
-        # self.month = self.datetime_now[1]
-        # self.year = self.datetime_now[0]
-        if self.minutes != datetime_now[5]:
-            self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, _ = datetime_now
-            self.display_refresh = True
-
     def leap_year(self, year):
         return bool((not year % 4) ^ (not year % 100))
 
@@ -410,19 +405,12 @@ class Controller(Led):
         return days if days else (29 if self.leap_year(self.year) else 28)
 
     def day_of_week(self, day, month, year):
-        if month < 3:
-            month += 12
-            year -= 1
-        return (day + 2 * month + 3 * (month + 1) // 5 + year + year // 4 - year // 100 + year // 400) % 7
+        t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
+        year -= month < 3
+        return (year + year // 4 - year // 100 + year // 400 + t[month - 1] + day) % 7
 
-    def get_name_of_the_day(self, wday, days=('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')):
+    def get_name_of_the_day(self, wday, days=('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')):
         return days[wday]
-
-    def prefix(self, number):
-        if number < 10:
-            return '0' + str(number)
-        else:
-            return str(number)
 
     def get_time(self):
         h_str = self.prefix(self.hour)
@@ -445,8 +433,10 @@ class Controller(Led):
         self.minutes = minutes
         self.seconds = seconds
         self.weekday = self.day_of_week(day, month, year)
+        time = (self.year, self.month, self.day, self.hour, self.minutes, self.seconds, self.weekday)
         try:
-            self.ds.datetime(self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, 0)
+            # format for setting datetime for ds = (year, month, monthday, hour, minute, second, weekday)
+            self.ds.datetime(time)
             self.rtc.datetime(self.ds.datetime())
             self.rtc_set_flag = True
         except:
@@ -460,6 +450,30 @@ class Controller(Led):
         else:
             return  # exit from the function
 
+    def set_initial_date_and_time(self):
+        self.year = 2024
+        self.month = 5
+        self.day = 11
+        self.weekday = self.day_of_week(self.day, self.month, self.year)
+        self.hour = 0
+        self.minutes = 0
+        self.seconds = 0
+    def update_time(self):
+        datetime_now = self.rtc.datetime()
+        # self.hour = self.datetime_now[4]
+        # self.second = self.datetime_now[6]
+        # self.day = self.datetime_now[2]
+        # self.month = self.datetime_now[1]
+        # self.year = self.datetime_now[0]
+        if self.seconds != datetime_now[6]:
+            self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, _ = datetime_now
+            self.display_refresh = True
+    def prefix(self, number):
+        if number < 10:
+            return '0' + str(number)
+        else:
+            return str(number)
     def get_data(self):
+        self.update_time()
         self.get_sensor_data()
-        self.get_rtc_time()
+

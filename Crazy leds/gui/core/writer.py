@@ -101,7 +101,7 @@ class Writer():
     state = {}  # Holds a display state for each device
 
     @staticmethod
-    def set_textpos(device, row=None, col=None):
+    def set_textpos(device, col=None, row=None):  # changed fo r x,y coordinates (before was y,x)
         devid = _get_id(device)
         if devid not in Writer.state:
             Writer.state[devid] = DisplayState()
