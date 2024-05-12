@@ -197,9 +197,9 @@ class Controller(Led):
         self.progress(1)
         self.set_buttons()
         self.progress(1)
-        self.set_led1()
+        self.set_led1(72)
         self.progress(1)
-        self.set_led2()
+        self.set_led2(144*3)
         self.set_timer()
         self.progress(1)
         self.gc_collect()
@@ -311,14 +311,14 @@ class Controller(Led):
 
     # setup of addressable leds:
     ## led buffers
-    def set_led1(self):
+    def set_led1(self,n):
         # led1 buffer
-        el_leds_buffer = np.array(72 * [[0, 0, 0]], dtype=np.uint8)
+        el_leds_buffer = np.array(n * [[0, 0, 0]], dtype=np.uint8)
         # memoryview of the buffers
         el_mv = memoryview(el_leds_buffer)
         # LED strip object initialization
-        el_leds = Aleds(27, el_mv, 72, bpp=3, order=[1, 0, 2, 3])  # init of elephant lamp NeoPix object
-        # Segments of the elefant lamp
+        el_leds = Aleds(27, el_mv, n, bpp=3, order=[1, 0, 2, 3])  # init of elephant lamp NeoPix object
+        # Segments of the elephant lamp
         self.progress(1)
         seg0 = Segment(0, el_leds_buffer[:], el_leds, True)  # all
         seg1 = Segment(1, el_leds_buffer[:36], el_leds)  # circle
@@ -335,22 +335,21 @@ class Controller(Led):
         self.progress(1)
         ## print(self.led1.led_palette) # after gamma - debug purposes only
         # aled_fill black (turn off) all leds
-        self.led1.aled_object.aled_fast_fill(self.led1.led_buffer, (72 * 3) // 4, 0)
+        self.led1.aled_object.aled_fast_fill(self.led1.led_buffer, (n * 3) // 4, 0)
         self.led1.aled_object.write()
 
-    def set_led2(self):
+    def set_led2(self,n):
         # led2 buffer
-        tl_leds_buffer = np.array(144 * 3 * [[0, 0, 0]], dtype=np.uint8)
+        tl_leds_buffer = np.array(n * [[0, 0, 0]], dtype=np.uint8)
         # memoryview of the buffers
         tl_mv = memoryview(tl_leds_buffer)
         # LED strip object initialization
-        tl_leds = Aleds(0, tl_mv, 428, bpp=3, order=[1, 0, 2, 3])  # init of three led lines NeoPix object
+        tl_leds = Aleds(0, tl_mv, n, bpp=3, order=[1, 0, 2, 3])  # init of three led lines NeoPix object
         self.progress(1)
         # Segments of the three led lines
         seg5 = Segment(5, tl_leds_buffer[:], tl_leds)  # all leds
         seg6 = Segment(6, tl_leds_buffer[:140], tl_leds)  # first line
-        seg7 = Segment(7, tl_leds_buffer[140:280],
-                       tl_leds)  # second line, remember to flip (np.flip(seg6,axis=0) segment and pass to the tl_leds_buffer before sending to the led strip
+        seg7 = Segment(7, tl_leds_buffer[140:280], tl_leds)  # second line, remember to flip (np.flip(seg6,axis=0) segment and pass to the tl_leds_buffer before sending to the led strip
         seg8 = Segment(8, tl_leds_buffer[280:], tl_leds)  # third line
         seg9 = Segment(9, [seg6, seg7, seg8], tl_leds, True)  # matrix
         # set led2 lamp object
@@ -361,7 +360,7 @@ class Controller(Led):
             self.led2.led_palette = self.gamma_table.gamma_cor(self.led2.led_palette)
         self.progress(1)
         # aled_fill black (turn off) all leds
-        self.led2.aled_object.aled_fast_fill(self.led2.led_buffer, (144 * 3 * 3) // 4, 0)
+        self.led2.aled_object.aled_fast_fill(self.led2.led_buffer, (n * 3) // 4, 0)
         self.led2.aled_object.write()
 
     def gc_collect(self):
@@ -419,7 +418,7 @@ class Controller(Led):
         year -= month < 3
         return (year + year // 4 - year // 100 + year // 400 + t[month - 1] + day) % 7
 
-    def get_name_of_the_day(self, wday, days=('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')):
+    def get_name_of_the_day(self, wday, days=('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')):
         return days[wday]
 
     def get_time(self):
@@ -471,7 +470,6 @@ class Controller(Led):
 
         if self.seconds != datetime_now[6]:
             self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, _ = datetime_now
-            self.weekday +=1
             self.time_refreshed = True
         else:
             self.time_refreshed = False

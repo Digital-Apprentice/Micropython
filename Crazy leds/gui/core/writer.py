@@ -25,6 +25,7 @@ import framebuf
 from uctypes import bytearray_at, addressof
 from sys import implementation
 from array import array
+from math import sin, cos, radians
 
 __version__ = (0, 5, 1)
 
@@ -305,8 +306,8 @@ class Writer():
             self.tab = value
         return self.tab
 
-    def setcolor(self, *_):
-        return self.fgcolor, self.bgcolor
+    def set_font(self, font):
+        self.font = font
 
 # Writer for colour displays.
 class CWriter(Writer):

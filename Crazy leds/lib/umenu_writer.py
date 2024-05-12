@@ -399,7 +399,8 @@ class Menu:
         self.font_width = self.writer.font.max_width()
 
         self.line_height = self.font_height + 4
-        if line_height > 0: self.line_height = line_height
+        if line_height > 0:
+            self.line_height = line_height
         self.v_padding = int((self.line_height - self.font_height) / 2)
         self.per_page = per_page
 
@@ -452,7 +453,7 @@ class Menu:
 
     def set_font(self, font):
         self.font = font
-        self.writer = self.writer(self.display, font,self.fgcolor,self.bgcolor, verbose=False)
+        self.writer.font = self.font
         self.font_height = self.writer.font.height()
         self.font_width = self.writer.font.max_width()
 
@@ -494,7 +495,6 @@ class Menu:
         x0_x_pos = self.x0 + x_pos
         #Label(self.writer, self.y0 + y + v_padding,self.x0 + 2 , str.upper(item.name),invert = item.is_active, align=0)
         #Label(self.writer, self.y0 + y + v_padding, self.x0 + x_pos, str.upper(item.get_decorator()),invert = item.is_active, align=1)
-
         # item name
         self.writer.set_textpos(self.display, y_v_padding,self.x0 + 1)
         self.writer.printstring(item.name, item.is_active)

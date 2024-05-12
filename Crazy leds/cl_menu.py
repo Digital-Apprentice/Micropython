@@ -8,50 +8,160 @@ from gui.core.writer import CWriter, circle, fillcircle, clip_rect, fill_clip_re
 import uasyncio as asyncio
 from cl_palettes import red, green, blue, yellow, cyan, magenta, purple, orange, pink, darkslategray, darkgreen, darkblue, darkred, darkorange, darkmagenta, darkcyan, darkviolet, darkyellow, darkyellow2, white, black
 from cl_palettes import full_saturation_spectrum as fss
-import gui.fonts.freesans20 as freesans20
-import gui.fonts.font10 as font10
-import gui.fonts.font6 as font6
+#import gui.fonts.freesans20 as freesans20
+#import gui.fonts.font10 as font10
+#import gui.fonts.font6 as font6
+import gui.fonts.nrg30 as nrg30
+import gui.fonts.nrg26 as nrg26
+import gui.fonts.nrg24 as nrg24
+import gui.fonts.nrg22 as nrg22
+import gui.fonts.nrg20 as nrg20
+import gui.fonts.nrg18 as nrg18
+import gui.fonts.nrg16 as nrg16
+import gui.fonts.nrg14 as nrg14
+import gui.fonts.nrg12 as nrg12
+import gui.fonts.nrg10 as nrg10
 
-import gui.fonts.nasalization_rg20 as nasalization_rg20
-import gui.fonts.nasalization_rg16 as nasalization_rg16
-import gui.fonts.nasalization_rg12 as nasalization_rg12
 import gui.fonts.arial10 as arial10
-#import gui.fonts.TTOTCL5 as TTOTCL5
-#import gui.fonts.TTOTCL8 as TTOTCL8
+
 import gui.fonts.TTOTCL10 as TTOTCL10
-#import gui.fonts.TTOTCoL5 as TTOTCoL5
-#import gui.fonts.TTOTCoL8 as TTOTCoL8
+
 import gui.fonts.TTOTCoL10 as TTOTCoL10
-#import gui.fonts.TTOTCT5 as TTOTCT5
+import gui.fonts.TTOTM10 as TTOTM10
 import gui.fonts.TTOTDB16 as TTOTDB16
 import gui.fonts.TTOTDB20 as TTOTDB20
 wr_menu = CWriter(c.display, arial10, fgcolor=c.display.rgb(darkyellow), bgcolor=c.display.rgb(black), verbose=False)
-wr_hour = CWriter(c.display, nasalization_rg20, fgcolor=c.display.rgb(fss[3]), bgcolor=c.display.rgb(black), verbose=False)
-wr_sensor = CWriter(c.display,TTOTCoL10, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
-wr_date = CWriter(c.display, arial10, fgcolor=c.display.rgb(cyan), bgcolor=c.display.rgb(black), verbose=False)
-#wr1 = CWriter(c.display, TTOTCL5, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-#wr2 = CWriter(c.display, TTOTCL8, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-wr3 = CWriter(c.display, TTOTCL10, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-#wr4 = CWriter(c.display, TTOTCoL5, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-#wr5 = CWriter(c.display, TTOTCoL8, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-wr6 = CWriter(c.display, TTOTCoL10, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-#wr7 = CWriter(c.display, TTOTCT5, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-wr8 = CWriter(c.display, TTOTDB16, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
-wr9 = CWriter(c.display, TTOTDB20, fgcolor=c.display.rgb(white),bgcolor=c.display.rgb(black),verbose=False)
+#wr_dashb = CWriter(c.display, nrg20, fgcolor=c.display.rgb(fss[3]), bgcolor=c.display.rgb(black), verbose=False)
+#wr_dashb = CWriter(c.display,nrg10, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
+#wr_dashb = CWriter(c.display, arial10, fgcolor=c.display.rgb(cyan), bgcolor=c.display.rgb(black), verbose=False)
+wr_dashb = CWriter(c.display, nrg20, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
 
 
 #display,writer,per_page: int = 4, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True)
-menu = Menu(c.display, wr_menu, 5,x0=0,y0=70)
-
+menu = Menu(c.display, wr_menu, 5,12,x0=0,y0=50,m_width=90,menu_header=True)
 
 class DefaultScreen(MenuScreen):
+    def __init__(self, name, width,x0=0, y0=0):
+        super().__init__(name)
+        self.x = x0
+        self.y = y0
+        self.width = width
+        self.cp_left = self._center_point(self.x, width)
+        self.cp_right = self._center_point(width, c.display.width)
+
+        self.padding = 2
+
+        self.draw_default()
+
+    def up(self):
+        pass
+        #self.menu.move(-1)
+
+    def down(self):
+        pass
+        #self.menu.move()
+
+    def select(self):
+        #menu.click()
+        return self
+
+    def draw_default(self):
+        c.display.fill(0)
+        self.clock()
+        self.date()
+        self.sensor()
+        c.display.show()
+
+    def draw(self):
+        return self
+    #    #self.draw_default()
+
+    def clock(self):
+        wr_dashb.font = nrg20
+        wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
+        clock = c.get_time()
+        half_len = 43
+        x = self.cp_left - half_len
+        for idx,t in enumerate(clock):
+            for n in t:
+                if int(n) == 1:
+                    wr_dashb.set_textpos(c.display, x+3, self.y + self.padding)
+                else:
+                    wr_dashb.set_textpos(c.display, x, self.y + self.padding)
+                wr_dashb.printstring(n)
+                x += 13
+            wr_dashb.set_textpos(c.display, x+1, self.y + self.padding)
+            if idx < 2: wr_dashb.printstring(':')
+            x += 6
+        self.clock_height = wr_dashb.font.height()
+        c.display.hline(self.cp_left - half_len, self.clock_height, 2 * half_len+6, c.display.rgb(fss[int(50)]))
+        self.clock_height += self.padding
+
+    def date(self):
+        wr_dashb.font = arial10
+        wr_dashb.fgcolor = c.display.rgb(cyan)
+        wr_dashb.bgcolor = c.display.rgb(black)
+        d, m, y, w = c.get_date()
+        date_str = w + '  ' + d + '.' + m + '.' + y
+        date_str_len = wr_dashb.stringlen(date_str)
+        x = self.cp_left - date_str_len // 2 + 3
+        y = self.y + self.clock_height
+        wr_dashb.set_textpos(c.display, x, y + self.padding)
+        wr_dashb.printstring(date_str)
+        self.date_height = wr_dashb.font.height() + self.padding
+
+    def sensor(self):
+        font = (nrg10, nrg14, nrg20)
+        fg_color = c.display.rgb(white)
+        bg_color = c.display.rgb(black)
+        wr_dashb.setcolor(fg_color,bg_color)
+        x = self.width
+        y = self.y+8
+        wr_dashb.font = font[2]
+        y_padding = (wr_dashb.font.height() + 12)
+        w = wr_dashb.font.max_width()*3+self.padding
+        h = wr_dashb.font.height()+ self.padding
+        r = (wr_dashb.font.height()+3)//2
+        s = ('T','H','P')
+        j = ('°C', '%', 'hPa')
+        for idx, d in enumerate((c.temperature, c.humidity, c.pressure)):
+            if idx == 0:
+                v = (43 - int(d)) % 100
+            elif idx == 1:
+                v = int(d)  % 100
+            else:
+                v = (int(d) - 920) % 100
+            if d > 56:
+                fg_color = c.display.rgb(white)
+            else:
+                fg_color = c.display.rgb(black)
+            bg_color = c.display.rgb(fss[int(v)])
+            c.display.rect(self.cp_right-14,y+idx*y_padding, w, h, bg_color,True)
+            fillcircle(c.display, self.cp_right-14, y+idx*y_padding+4, r, c.display.rgb(black))
+            wr_dashb.font = font[2]
+            wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
+            wr_dashb.set_textpos(c.display, self.cp_right-24, y+idx*y_padding-6)
+            wr_dashb.printstring(s[idx])
+            wr_dashb.font = font[1]
+            wr_dashb.setcolor(fg_color, bg_color)
+            wr_dashb.set_textpos(c.display, self.cp_right-2, y + idx * y_padding + 5)
+            wr_dashb.printstring(str(d))
+            wr_dashb.font = font[0]
+            wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
+            wr_dashb.set_textpos(c.display, self.cp_right - 24, y + idx * y_padding +14)
+            wr_dashb.printstring(j[idx])
+
+    def _center_point(self, x=0, width=c.display.width):
+        xc = (width - x) // 2 + x
+        return xc
+
+class DefaultScreen1(MenuScreen):
     def __init__(self, name):
         super().__init__(name)
         self.x = 0
         self.y = 0
         self.cp = self._center_point()
         self.padding = 2
-
         self.draw_default()
     '''
     def up(self):
@@ -78,51 +188,60 @@ class DefaultScreen(MenuScreen):
         #self.draw_default()
 
     def clock(self):
+        wr_dashb.font = nrg20
+        wr_dashb.setcolor(c.display.rgb(darkslategray), c.display.rgb(black))
         clock = c.get_time()
         half_len = 43
         x = self.cp - half_len
         for idx,t in enumerate(clock):
             for n in t:
                 if int(n) == 1:
-                    wr_hour.set_textpos(c.display, x+3, self.y + self.padding)
+                    wr_dashb.set_textpos(c.display, x+3, self.y + self.padding)
                 else:
-                    wr_hour.set_textpos(c.display, x, self.y + self.padding)
-                wr_hour.printstring(n)
+                    wr_dashb.set_textpos(c.display, x, self.y + self.padding)
+                wr_dashb.printstring(n)
                 x += 12
-            wr_hour.set_textpos(c.display, x+2, self.y + self.padding)
-            if idx < 2: wr_hour.printstring(':')
+            wr_dashb.set_textpos(c.display, x+2, self.y + self.padding)
+            if idx < 2: wr_dashb.printstring(':')
             x += 6
-        self.clock_height = wr_hour.font.height()
+        self.clock_height = wr_dashb.font.height()
         c.display.hline(self.cp - half_len, self.clock_height, 2*half_len, c.display.rgb(fss[int(50)]))
         self.clock_height += self.padding
 
     def date(self):
+        wr_dashb.font = arial10
+        wr_dashb.setcolor(c.display.rgb(cyan), c.display.rgb(black))
         d, m, y, w = c.get_date()
         date_str = w + '  ' + d + '.' + m + '.' + y
-        date_str_len = wr_date.stringlen(date_str)
+        date_str_len = wr_dashb.stringlen(date_str)
         x = self.cp-date_str_len//2
         y = self.y + self.clock_height
-        wr_date.set_textpos(c.display, x, y + self.padding)
-        wr_date.printstring(date_str)
-        self.date_height = wr_date.font.height()+self.padding
+        wr_dashb.set_textpos(c.display, x, y + self.padding)
+        wr_dashb.printstring(date_str)
+        self.date_height = wr_dashb.font.height()+self.padding
 
     def sensor(self):
-        t_str = 'T:  ' + str(c.temperature) + '  °C'
-        h_str = 'H:  ' + str(c.humidity) + '   %'
-        p_str = 'P:  ' + str(c.pressure) + ' hPa'
-        fg_color = c.display.rgb(black)
-        bg_color = c.display.rgb(fss[int(c.pressure/c.temperature)])
-        x = self.cp-28
+        wr_dashb.font = nrg10
+        wr_dashb.setcolor(c.display.rgb(darkslategray), c.display.rgb(black))
+        t_str = 'T: ' + str(c.temperature) + '  °C'
+        h_str = 'H: ' + str(c.humidity) + '  %'
+        p_str = 'P: ' + str(c.pressure) + ' hPa'
+        bg_color = c.display.rgb(fss[int(c.humidity)])
+        if c.humidity > 56:
+            fg_color = c.display.rgb(white)
+        else:
+            fg_color = c.display.rgb(black)
+        x = self.cp-33
         y = self.y + self.clock_height + self.date_height
-        fill_clip_rect(c.display, x-7 , y, 60 + 4*self.padding, 3 * wr_sensor.font.height() + self.padding,bg_color)
-        wr_sensor.setcolor(fg_color,bg_color)
+        fill_clip_rect(c.display, x-5 , y, 70 + 4*self.padding, 3 * wr_dashb.font.height() + self.padding,bg_color)
+        wr_dashb.setcolor(fg_color,bg_color)
         for idx,data in enumerate ((t_str,h_str,p_str)):
-            wr_sensor.set_textpos(c.display, x, y + idx*wr_sensor.font.height()+self.padding)
-            wr_sensor.printstring(data)
-            #if idx < 2: c.display.hline(x,  y + (idx+1) * wr_sensor.font.height()+self.padding//2, 54, c.display.rgb(white))
-            print(y + idx * wr_sensor.font.height() + self.padding)
-        print('3',y + 3 * wr_sensor.font.height() + self.padding)
-        #self.sensor_height = wr_sensor.font.height()+self.padding
+            wr_dashb.set_textpos(c.display, x, y + idx*wr_dashb.font.height()+self.padding)
+            wr_dashb.printstring(data)
+            #if idx < 2: c.display.hline(x,  y + (idx+1) * wr_dashb.font.height()+self.padding//2, 54, c.display.rgb(white))
+            #print(y + idx * wr_dashb.font.height() + self.padding)
+        #print('3',y + 3 * wr_dashb.font.height() + self.padding)
+        #self.sensor_height = wr_dashb.font.height()+self.padding
 
     def _center_point(self,width=c.display.width):
         xc = (width - self.x) // 2
@@ -146,22 +265,23 @@ class DrawCustomScreen(CustomItem):
         c.display.show()
 
 def menu_set():
-    menu.set_screen(DefaultScreen('Main Menu')
-                .add(DrawCustomScreen('H: 47,5%'))
+    menu.set_screen(MenuScreen('MENU')
+                .add(InfoItem('LED1:', str(c.led1.led_active)))
+                .add(InfoItem('LED2:', str(c.led2.led_active)))
                 )
     menu.draw()
 
-
+df = DefaultScreen('Default',90)
 async def switch_handler():
-
+    menu_set()
     r = c.encoder
     while True:
         if c.display_refresh:  # display refresh is needed
             #print(c.hour,c.minutes,c.seconds,c.year,c.month,c.day,c.weekday)
-            c.get_sensor_data()
             #print(c.temperature,c.humidity,c.pressure)
             c.display_refresh = False
-            menu_set()
+            df.draw_default()
+            
         if r.value() != 0:
             menu.move(r.value())
             r.value(0)
@@ -305,10 +425,10 @@ class MainScreen(CustomItem):
 
     def time_date(self, time, date):
 
-        wr_hour.set_textpos(0, 0)
-        wr_hour.printstring('12:34:56')
-        wr_date.set_textpos(0, 100)
-        wr_date.printstring(str(c.day) + '.' + str(c.month) + '.' + str(c.year))
+        wr_dashb.set_textpos(0, 0)
+        wr_dashb.printstring('12:34:56')
+        wr_dashb.set_textpos(0, 100)
+        wr_dashb.printstring(str(c.day) + '.' + str(c.month) + '.' + str(c.year))
 
 
 class EffectList(CustomItem):

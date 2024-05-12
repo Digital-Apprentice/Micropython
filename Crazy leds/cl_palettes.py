@@ -144,8 +144,6 @@ class GammaTable:
             return self._color_space
         else:
             self._color_space = 2**color_space
-            print(self._color_space)
-    
     def clear_gamma_table(self):
         try:
             self.gamma_table.clear()
