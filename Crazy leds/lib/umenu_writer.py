@@ -673,11 +673,11 @@ class Menu:
         j = ('°C', '%', 'hPa')
         for idx, d in enumerate((c.temperature, c.humidity, c.pressure)):
             if idx == 0:
-                v = (43 - int(d)) % 100
+                v = (30 - int(d)) % 100
             elif idx == 1:
                 v = int(d) % 100
             else:
-                v = (int(d) - 920) % 100
+                v = (int(d) - 920) % 100   #TODO sprawdzić zakresy ciśnień atmosferycznych w Polsce
             if d > 56:
                 fg_color = c.display.rgb(white)
             else:
