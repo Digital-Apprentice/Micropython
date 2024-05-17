@@ -206,6 +206,7 @@ class Controller(Led):
         self.display_refresh = True
 
     def set_display(self):
+
         # LCD TFT display configuration
         dc = Pin(2, Pin.OUT, value=1)  # Arbitrary pins
         cs = Pin(5, Pin.OUT, value=1)
@@ -213,6 +214,7 @@ class Controller(Led):
         # Hardware SPI on native pins for performance. Check DRIVERS.md for optimum baudrate.
         spi = SPI(2, 60_000_000, sck=Pin(18), mosi=Pin(23), miso=Pin(19))
         gc.collect()
+        gc.mem_free()
         self.display = TFT(spi, cs, dc, rst)
         # On st7735r 1.8 inch display can exchange height and width for portrait mode. See docs.
         # Released under the MIT License (MIT). See LICENSE.

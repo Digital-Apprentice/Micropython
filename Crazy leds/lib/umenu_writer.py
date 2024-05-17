@@ -8,9 +8,19 @@ from array import array
 # with Peter Hinch's writer library and st7735r driver (https://github.com/peterhinch/micropython-font-to-py)
 # writer library allows rendering text to a monochrome or colour display having a suitable device driver
 # used TFT 1,8' (160x128) display
-from gui.core.writer import CWriter
+from cl_main_classes import Controller
+c = Controller()
+from gui.core.writer import CWriter, circle, fillcircle, clip_rect, fill_clip_rect, draw_circle_segment
+from cl_palettes import red, green, blue, yellow, cyan, magenta, purple, orange, pink, darkslategray, darkgreen, darkblue, darkred, darkorange, darkmagenta, darkcyan, darkviolet, darkyellow, darkyellow2, white, black
+from cl_palettes import full_saturation_spectrum as fss
+import gui.fonts.nrg20 as nrg20
+import gui.fonts.nrg14 as nrg14
+import gui.fonts.nrg10 as nrg10
+import gui.fonts.arial10 as arial10
+wr_menu = CWriter(c.display, arial10, fgcolor=c.display.rgb(darkyellow), bgcolor=c.display.rgb(black), verbose=False)
+wr_dashb = CWriter(c.display, nrg20, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
 
-def menu_parameters(display, writer, x0, y0, line_height, m_width, per_page, v_padding):  
+def menu_parameters(display, writer, x0, y0, line_height, m_width, per_page, v_padding):
     # format: self.display, self.writer,self.x0,self.y0,self.line_height,self.m_width,self.per_page,self.v_padding)
     global m_params
     m_params = [display, writer, x0, y0, line_height, m_width, per_page, v_padding]
@@ -22,10 +32,6 @@ def active_item_v_pos(y_v_padding):
 
 # Convert r, g, b in range 0-255 to an 8 bit colour value
 # rrrgggbb. Converted to 12 bit on the fly.
-
-def rgb2rgb444(color):
-    r,g,b = color
-    return (r & 0xe0) | ((g >> 3) & 0x1c) | (b >> 6)
 
 class MenuItem():
 
@@ -79,7 +85,7 @@ class SubMenuItem(MenuItem):
 
     def __init__(self, name, decorator=None, visible=None):
         super().__init__(name, '>' if decorator is None else decorator, visible)
-        self.menu = MenuScreen(name, None)
+        self.menu = MenuScreen(name, parent = None)
 
     def click(self):
         pass
@@ -258,9 +264,10 @@ class ValueItem(CustomItem, CallbackItem):
         #                        
         #a_i_value = y_v_padding
         
-        x = m_params[2]+m_params[5]        
-        m_params[0].fill_rect(x-25,a_i_value-m_params[7], x-m_params[2]-6, m_params[4], m_params[1].fgcolor)
-        m_params[1].set_textpos(m_params[0],a_i_value, x-22)
+        x = m_params[2]+m_params[5]
+        w = 25
+        m_params[0].fill_rect(x-w, a_i_value-m_params[7], w, m_params[4], m_params[1].fgcolor)
+        m_params[1].set_textpos(m_params[0],x-22, a_i_value)
         m_params[1].printstring(self.get_decorator(), 1)
         #print('x-10:     ', x) # debug purposes only
         self.display.show()
@@ -323,6 +330,11 @@ class MenuScreen:
         self.parent = parent
         self.title = title
 
+        self.x = 0
+        self.y = 0
+        self.width = 90
+
+
     def add(self, item, parent=None):
         item.parent = self if parent is None else parent
         if type(item) is SubMenuItem:
@@ -376,10 +388,74 @@ class MenuScreen:
             return item.click()
 
 
+'''
+class MenuScreen:
+
+    def __init__(self, title: str, parent=None):
+        self._items = []
+        self._visible_items = []
+        self.selected = 0
+        self.parent = parent
+        self.title = title
+
+    def add(self, item, parent=None):
+        item.parent = self if parent is None else parent
+        if type(item) is SubMenuItem:
+            item.menu.parent = self if parent is None else parent
+        self._items.append(item)
+        return self
+
+    def reset(self):
+        self._items = []
+
+    def count(self) -> int:
+        elements = 0
+        self._visible_items = []
+        for item in self._items:
+            if item.visible:
+                elements += 1
+                self._visible_items.append(item)
+        return elements + (1 if self.parent is not None else 0)
+
+    def up(self) -> None:
+        if self.selected > 0:
+            self.selected = self.selected - 1
+
+    def down(self) -> None:
+        if self.selected + 1 < self.count():
+            self.selected = self.selected + 1
+
+    def get(self, position):
+
+        if position < 0 or position + 1 > self.count():
+            return None
+
+        if position + 1 == self.count() and self.parent is not None:
+            item = BackItem(self.parent)
+        else:
+            item = self._visible_items[position]
+
+        item.is_active = position == self.selected
+        return item
+
+    def select(self) -> None:
+
+        item = self.get(self.selected)
+        if type(item) is BackItem:
+            self.selected = 0
+
+        if type(item) is SubMenuItem:
+            return item.menu
+        else:
+            # do action and return current menu
+            return item.click()
+
+
+'''
 class Menu:
     current_screen = None  # type: MenuScreen | CustomItem
 
-    def __init__(self, display,writer,per_page: int = 4, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True):
+    def __init__(self, display,writer=wr_menu,per_page: int = 5, line_height: int = 0, x0: int = 0, y0: int = 0, yds: int = 0,  m_width: int = None, menu_header=True, draw_default = True):
 
         self.display = display  # display driver
         self.writer = writer  # CWriter(display,font, self.fgcolor,self.bgcolor,verbose=True)
@@ -388,9 +464,11 @@ class Menu:
         self.fgcolor = self.writer.fgcolor
         self.bgcolor = self.writer.bgcolor
         self.menu_header = menu_header
+        self.draw_default = draw_default
         # menu screen coordinates and sizes
         self.x0 = x0
         self.y0 = y0
+        self.yds = yds  # y0 for date and sensors
         if m_width == None:
             self.m_width = self.display.width
         else:
@@ -403,8 +481,15 @@ class Menu:
             self.line_height = line_height
         self.v_padding = int((self.line_height - self.font_height) / 2)
         self.per_page = per_page
-
+        if self.menu_header:
+            self.mask_height = (self.per_page+1) * (self.line_height+self.v_padding)
+        else:
+            self.mask_height = self.per_page * (self.line_height+self.v_padding)
         self.main_screen = None
+        self.cp_left = self._center_point(self.x0, self.m_width)
+        self.cp_right = self._center_point(self.m_width, c.display.width)
+        self.padding = 2
+
         self.set_globals()
 
     def set_globals(self):
@@ -431,14 +516,20 @@ class Menu:
         self.draw()
 
     def draw(self):
-
+        if self.draw_default:
+            self.draw_default_data()
         if type(self.current_screen) is not MenuScreen:
+            print('type(self.current_screen inside if): ',type(self.current_screen))
             self.current_screen.draw()
             return
+        print('type(self.current_screen) - outside if: ', type(self.current_screen))
+        #self.display.fill(0)
 
-        self.display.fill(0)
-        if self.menu_header: self._menu_header(self.current_screen.title)
+        if self.menu_header:
+            self._menu_header(self.current_screen.title)
 
+        print('self.current_screen.title',self.current_screen.title)
+        #c.display.fill_rect(self.x0, self.y0, self.m_width, self.mask_height, c.display.rgb(black))
         elements = self.current_screen.count()
         start = self.current_screen.selected - self.per_page + 1 if self.current_screen.selected + 1 > self.per_page else 0
         end = start + self.per_page
@@ -460,7 +551,7 @@ class Menu:
     def set_origin(self, x0, y0):
         self.x0 = x0
         self.y0 = y0
-        self.writer.set_textpos(self.display, self.y0, self.x0)
+        self.writer.set_textpos(self.display, self.x0,self.y0)
         self.set_globals()
 
     def set_colors(self, fgcolor, bgcolor):
@@ -491,20 +582,20 @@ class Menu:
         else:
             background = self.bgcolor
         self.display.fill_rect(self.x0, y, self.m_width, self.line_height, background)
-        x_pos = self.m_width - self.writer.stringlen(item.get_decorator())-2
-        x0_x_pos = self.x0 + x_pos
+        #x_pos = self.x0 + self.m_width - self.writer.stringlen(item.get_decorator())-2
+        #x0_x_pos = self.x0 + x_pos
         #Label(self.writer, self.y0 + y + v_padding,self.x0 + 2 , str.upper(item.name),invert = item.is_active, align=0)
         #Label(self.writer, self.y0 + y + v_padding, self.x0 + x_pos, str.upper(item.get_decorator()),invert = item.is_active, align=1)
         # item name
-        self.writer.set_textpos(self.display, y_v_padding,self.x0 + 1)
+        self.writer.set_textpos(self.display,self.x0 + 1,y_v_padding)
         self.writer.printstring(item.name, item.is_active)
         # value or decorator
-        self.writer.set_textpos(self.display, y_v_padding, x0_x_pos)
+        self.writer.set_textpos(self.display, self.x0 + self.m_width - self.writer.stringlen(item.get_decorator())-2,y_v_padding)
         self.writer.printstring(item.get_decorator(), item.is_active)        
         
     def _menu_header(self, text):
-        x = int((self.m_width / 2) - (self.writer.stringlen(text) / 2))
-        self.writer.set_textpos(self.display, self.y0, self.x0 + x)
+
+        self.writer.set_textpos(self.display, self.x0 + int((self.m_width / 2) - (self.writer.stringlen(text) / 2)), self.y0)
         self.writer.printstring(str.upper(self.current_screen.title), 0)
         self.display.hline(self.x0, self.y0 + self.font_height + 2, self.m_width, self.fgcolor)
 
@@ -523,3 +614,89 @@ class Menu:
                 obj.display = self.display
             if isinstance(obj, SubMenuItem):
                 self._update_display(obj.menu._items)
+
+    #part of main screen
+    def draw_default_data(self):
+        c.display.fill(0)
+        self.clock()
+        self.date()
+        self.sensor()
+        #c.display.show()
+
+    def clock(self):
+        wr_dashb.font = nrg20
+        wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
+        clock = c.get_time()
+        half_len = 43
+        x = self.cp_left - half_len
+        for idx, t in enumerate(clock):
+            for n in t:
+                if int(n) == 1:
+                    wr_dashb.set_textpos(c.display, x + 3, self.yds + self.padding)
+                else:
+                    wr_dashb.set_textpos(c.display, x, self.yds + self.padding)
+                wr_dashb.printstring(n)
+                x += 13
+            wr_dashb.set_textpos(c.display, x + 1, self.yds + self.padding)
+            if idx < 2: wr_dashb.printstring(':')
+            x += 6
+        self.clock_height = wr_dashb.font.height()
+        c.display.hline(self.cp_left - half_len, self.clock_height+self.yds, 2 * half_len + 6, c.display.rgb(fss[int(50)]))
+        self.clock_height += self.padding
+
+    def date(self):
+        wr_dashb.font = arial10
+        wr_dashb.fgcolor = c.display.rgb(cyan)
+        wr_dashb.bgcolor = c.display.rgb(black)
+        d, m, y, w = c.get_date()
+        date_str = w + '  ' + d + '.' + m + '.' + y
+        date_str_len = wr_dashb.stringlen(date_str)
+        x = self.cp_left - date_str_len // 2 + 3
+        y = self.yds + self.clock_height
+        wr_dashb.set_textpos(c.display, x, y + self.padding)
+        wr_dashb.printstring(date_str)
+        self.date_height = wr_dashb.font.height() + self.padding
+
+    def sensor(self):
+        font = (nrg10, nrg14, nrg20)
+        fg_color = c.display.rgb(white)
+        bg_color = c.display.rgb(black)
+        wr_dashb.setcolor(fg_color, bg_color)
+        x = self.m_width
+        y = self.yds + 8
+        wr_dashb.font = font[2]
+        y_padding = (wr_dashb.font.height() + 12)
+        w = wr_dashb.font.max_width() * 3 + self.padding
+        h = wr_dashb.font.height() + self.padding
+        r = (wr_dashb.font.height() + 3) // 2
+        s = ('T', 'H', 'P')
+        j = ('°C', '%', 'hPa')
+        for idx, d in enumerate((c.temperature, c.humidity, c.pressure)):
+            if idx == 0:
+                v = (43 - int(d)) % 100
+            elif idx == 1:
+                v = int(d) % 100
+            else:
+                v = (int(d) - 920) % 100
+            if d > 56:
+                fg_color = c.display.rgb(white)
+            else:
+                fg_color = c.display.rgb(black)
+            bg_color = c.display.rgb(fss[int(v)])
+            c.display.rect(self.cp_right - 14, y + idx * y_padding, w, h, bg_color, True)
+            fillcircle(c.display, self.cp_right - 14, y + idx * y_padding + 4, r, c.display.rgb(black))
+            wr_dashb.font = font[2]
+            wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
+            wr_dashb.set_textpos(c.display, self.cp_right - 24, y + idx * y_padding - 6)
+            wr_dashb.printstring(s[idx])
+            wr_dashb.font = font[1]
+            wr_dashb.setcolor(fg_color, bg_color)
+            wr_dashb.set_textpos(c.display, self.cp_right - 2, y + idx * y_padding + 5)
+            wr_dashb.printstring(str(d))
+            wr_dashb.font = font[0]
+            wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
+            wr_dashb.set_textpos(c.display, self.cp_right - 24, y + idx * y_padding + 14)
+            wr_dashb.printstring(j[idx])
+
+    def _center_point(self, x=0, width=c.display.width):
+        return ((width - x) // 2 + x)

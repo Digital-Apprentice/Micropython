@@ -20,7 +20,7 @@ from time import sleep_ms
 import framebuf
 import gc
 import micropython
-from drivers.boolpalette import BoolPalette
+from lib.boolpalette import BoolPalette
 
 # Datasheet para 8.4 scl write cycle 66ns == 15MHz
 
@@ -48,8 +48,8 @@ class ST7735R(framebuf.FrameBuffer):
     # Convert r, g, b in range 0-255 to an 8 bit colour value
     # rrrgggbb. Converted to 12 bit on the fly.
     @staticmethod
-    def rgb((r, g, b)):
-        return (r & 0xe0) | ((g >> 3) & 0x1c) | (b >> 6)
+    def rgb(color):
+        return (color[0] & 0xe0) | ((color[1] >> 3) & 0x1c) | (color[2] >> 6)
 
     # rst and cs are active low, SPI is mode 0
     def __init__(self, spi, cs, dc, rst, height=128, width=160, usd=False, init_spi=False):
