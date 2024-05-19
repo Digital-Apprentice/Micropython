@@ -80,13 +80,13 @@ class DS3231:
         """Get or set datetime
 
         Always sets or returns in 24h format, converts to 24h if clock is set to 12h format
-        datetime : tuple, (0-year, 1-month, 2-day, 3-hour, 4-minutes[, 5-seconds[, 6-weekday]])"""
+        datetime : tuple, (0-year, 1-month, 2-day, 3-weekday, 4-hour, 5-minutes[, 6-seconds])"""
         if datetime is None:
             self.i2c.readfrom_mem_into(self.addr, DATETIME_REG, self._timebuf)
             # 0x00 - Seconds    BCD
             # 0x01 - Minutes    BCD
             # 0x02 - Hour       0 12/24 AM/PM/20s BCD
-            # 0x03 - WDay 1-7   0000 0 BCD
+            # 0x03 - WDay 1-7   0000 0 BCD  - adjusted later to 0..6
             # 0x04 - Day 1-31   00 BCD
             # 0x05 - Month 1-12 Century 00 BCD
             # 0x06 - Year 0-99  BCD (2000-2099)
@@ -102,7 +102,7 @@ class DS3231:
                 # 24h mode
                 hour = bcdtodec(self._timebuf[2] & 0xbf) # Mask bit 6 (12/24 format)
 
-            weekday = bcdtodec(self._timebuf[3]) # Can be set arbitrarily by user (1,7)
+            weekday = bcdtodec(self._timebuf[3])-1 # Can be set arbitrarily by user (0(Monday)..6(Sunday))
             day = bcdtodec(self._timebuf[4])
             month = bcdtodec(self._timebuf[5] & 0x7f) # Mask out the century bit
             year = bcdtodec(self._timebuf[6]) + 2000
@@ -114,15 +114,15 @@ class DS3231:
 
         # Set the clock
         try:
-            self._timebuf[3] = dectobcd(datetime[6]) # Day of week
+            self._timebuf[3] = dectobcd(datetime[3]+1) # Day of week, +1 to adjust from 0..6 format
         except IndexError:
             self._timebuf[3] = 0
         try:
-            self._timebuf[0] = dectobcd(datetime[5]) # Seconds
+            self._timebuf[0] = dectobcd(datetime[6]) # Seconds
         except IndexError:
             self._timebuf[0] = 0
-        self._timebuf[1] = dectobcd(datetime[4]) # Minutes
-        self._timebuf[2] = dectobcd(datetime[3]) # Hour + the 24h format flag
+        self._timebuf[1] = dectobcd(datetime[5]) # Minutes
+        self._timebuf[2] = dectobcd(datetime[4]) # Hour + the 24h format flag
         self._timebuf[4] = dectobcd(datetime[2]) # Day
         self._timebuf[5] = dectobcd(datetime[1]) & 0xff # Month + mask the century flag
         self._timebuf[6] = dectobcd(int(str(datetime[0])[-2:])) # Year can be yyyy, or yy

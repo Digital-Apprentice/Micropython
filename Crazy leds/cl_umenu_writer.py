@@ -10,25 +10,25 @@ from array import array
 # used TFT 1,8' (160x128) display
 from cl_main_classes import Controller
 c = Controller()
-from gui.core.writer import CWriter, circle, fillcircle, clip_rect, fill_clip_rect, draw_circle_segment
+from lib.writer import CWriter, circle, fillcircle, clip_rect, fill_clip_rect, draw_circle_segment
 from cl_palettes import red, green, blue, yellow, cyan, magenta, purple, orange, pink, darkslategray, darkgreen, darkblue, darkred, darkorange, darkmagenta, darkcyan, darkviolet, darkyellow, darkyellow2, white, black
 from cl_palettes import full_saturation_spectrum as fss
-import gui.fonts.nrg20 as nrg20
-import gui.fonts.nrg14 as nrg14
-import gui.fonts.nrg10 as nrg10
-import gui.fonts.arial10 as arial10
+import fonts.nrg20 as nrg20
+import fonts.nrg14 as nrg14
+import fonts.nrg10 as nrg10
+import fonts.arial10 as arial10
 wr_menu = CWriter(c.display, arial10, fgcolor=c.display.rgb(darkyellow), bgcolor=c.display.rgb(black), verbose=False)
 wr_dashb = CWriter(c.display, nrg20, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
 
-def menu_parameters(display, writer, x0, y0, line_height, m_width, per_page, v_padding):
+def menu_parameters(display, writer, x0, y0, line_height, m_width, per_page, v_padding, menu_height):
     # format: self.display, self.writer,self.x0,self.y0,self.line_height,self.m_width,self.per_page,self.v_padding)
     global m_params
-    m_params = [display, writer, x0, y0, line_height, m_width, per_page, v_padding]
+    m_params = [display, writer, x0, y0, line_height, m_width, per_page, v_padding, menu_height]
 
 def active_item_v_pos(y_v_padding):
     # cross method for passing active item vertical position
-    global a_i_value
-    a_i_value = y_v_padding
+    global a_i_v_pos
+    a_i_v_pos = y_v_padding
 
 # Convert r, g, b in range 0-255 to an 8 bit colour value
 # rrrgggbb. Converted to 12 bit on the fly.
@@ -262,12 +262,12 @@ class ValueItem(CustomItem, CallbackItem):
         #               0        1    2   3      4           5        6          7 
         #m_params = [display, writer,x0, y0, line_height, m_width, per_page, v_padding]
         #                        
-        #a_i_value = y_v_padding
+        #a_i_v_pos = y_v_padding
         
         x = m_params[2]+m_params[5]
         w = 25
-        m_params[0].fill_rect(x-w, a_i_value-m_params[7], w, m_params[4], m_params[1].fgcolor)
-        m_params[1].set_textpos(m_params[0],x-22, a_i_value)
+        m_params[0].fill_rect(x - w, a_i_v_pos - m_params[7], w, m_params[4], m_params[1].fgcolor)
+        m_params[1].set_textpos(m_params[0], x - 22, a_i_v_pos)
         m_params[1].printstring(self.get_decorator(), 1)
         #print('x-10:     ', x) # debug purposes only
         self.display.show()
@@ -455,7 +455,7 @@ class MenuScreen:
 class Menu:
     current_screen = None  # type: MenuScreen | CustomItem
 
-    def __init__(self, display,writer=wr_menu,per_page: int = 5, line_height: int = 0, x0: int = 0, y0: int = 0, yds: int = 0,  m_width: int = None, menu_header=True, draw_default = True):
+    def __init__(self, display,writer=wr_menu,per_page: int = 5, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True, draw_default = True):
 
         self.display = display  # display driver
         self.writer = writer  # CWriter(display,font, self.fgcolor,self.bgcolor,verbose=True)
@@ -468,32 +468,31 @@ class Menu:
         # menu screen coordinates and sizes
         self.x0 = x0
         self.y0 = y0
-        self.yds = yds  # y0 for date and sensors
+        self.padding = 2
         if m_width == None:
             self.m_width = self.display.width
         else:
             self.m_width = m_width
         self.font_height = self.writer.font.height()
         self.font_width = self.writer.font.max_width()
-
         self.line_height = self.font_height + 4
         if line_height > 0:
             self.line_height = line_height
         self.v_padding = int((self.line_height - self.font_height) / 2)
         self.per_page = per_page
         if self.menu_header:
-            self.mask_height = (self.per_page+1) * (self.line_height+self.v_padding)
+            self.menu_height = (self.per_page + 1) * (self.line_height + self.v_padding)
         else:
-            self.mask_height = self.per_page * (self.line_height+self.v_padding)
+            self.menu_height = self.per_page * (self.line_height + self.v_padding)
+        self.xm = x0 + self.padding  # x0 for date and sensors, as default equal to x0
+        self.ym = y0  # y0 for date and sensors, as default equal to y0
         self.main_screen = None
         self.cp_left = self._center_point(self.x0, self.m_width)
         self.cp_right = self._center_point(self.m_width, c.display.width)
-        self.padding = 2
-
         self.set_globals()
 
     def set_globals(self):
-        menu_parameters(self.display, self.writer,self.x0,self.y0,self.line_height,self.m_width,self.per_page,self.v_padding)
+        menu_parameters(self.display, self.writer,self.x0,self.y0,self.line_height,self.m_width,self.per_page,self.v_padding, self.menu_height)
         
     def set_screen(self, screen: MenuScreen):
         self.current_screen = screen
@@ -518,6 +517,8 @@ class Menu:
     def draw(self):
         if self.draw_default:
             self.draw_default_data()
+        else:
+            self.display.fill(0)
         if type(self.current_screen) is not MenuScreen:
             print('type(self.current_screen inside if): ',type(self.current_screen))
             self.current_screen.draw()
@@ -529,7 +530,7 @@ class Menu:
             self._menu_header(self.current_screen.title)
 
         print('self.current_screen.title',self.current_screen.title)
-        #c.display.fill_rect(self.x0, self.y0, self.m_width, self.mask_height, c.display.rgb(black))
+        #c.display.fill_rect(self.x0, self.y0, self.m_width, self.menu_height, c.display.rgb(black))
         elements = self.current_screen.count()
         start = self.current_screen.selected - self.per_page + 1 if self.current_screen.selected + 1 > self.per_page else 0
         end = start + self.per_page
@@ -573,31 +574,29 @@ class Menu:
             menu_y_end = self.line_height
         else:
             menu_y_end = 0
-        y = self.y0 + menu_y_end + (pos * self.line_height)
+        x = self.x0 + self.xm
+        y = self.y0 + self.ym + menu_y_end + (pos * self.line_height)
         v_padding = int((self.line_height - self.font_height) / 2)
         y_v_padding = y + v_padding
         if item.is_active:
             background = self.fgcolor
-            active_item_v_pos(y_v_padding) # a_i_value method format: y_v_padding
+            active_item_v_pos(y_v_padding) # a_i_v_pos method format: y_v_padding
         else:
             background = self.bgcolor
-        self.display.fill_rect(self.x0, y, self.m_width, self.line_height, background)
-        #x_pos = self.x0 + self.m_width - self.writer.stringlen(item.get_decorator())-2
-        #x0_x_pos = self.x0 + x_pos
-        #Label(self.writer, self.y0 + y + v_padding,self.x0 + 2 , str.upper(item.name),invert = item.is_active, align=0)
-        #Label(self.writer, self.y0 + y + v_padding, self.x0 + x_pos, str.upper(item.get_decorator()),invert = item.is_active, align=1)
+        self.display.fill_rect(x, y, self.m_width, self.line_height, background)
         # item name
-        self.writer.set_textpos(self.display,self.x0 + 1,y_v_padding)
+        self.writer.set_textpos(self.display,x + 1,y_v_padding)
         self.writer.printstring(item.name, item.is_active)
         # value or decorator
-        self.writer.set_textpos(self.display, self.x0 + self.m_width - self.writer.stringlen(item.get_decorator())-2,y_v_padding)
+        self.writer.set_textpos(self.display, x + self.m_width - self.writer.stringlen(item.get_decorator())-2, y_v_padding)
         self.writer.printstring(item.get_decorator(), item.is_active)        
         
     def _menu_header(self, text):
-
-        self.writer.set_textpos(self.display, self.x0 + int((self.m_width / 2) - (self.writer.stringlen(text) / 2)), self.y0)
+        x = self.x0 + self.xm
+        y = self.y0 + self.ym
+        self.writer.set_textpos(self.display, x + int((self.m_width / 2) - (self.writer.stringlen(text) / 2)), y)
         self.writer.printstring(str.upper(self.current_screen.title), 0)
-        self.display.hline(self.x0, self.y0 + self.font_height + 2, self.m_width, self.fgcolor)
+        self.display.hline(x,y + self.font_height, self.m_width, self.fgcolor)
 
     def not_background(self,background):
         if background == self.bgcolor:
@@ -621,28 +620,29 @@ class Menu:
         self.clock()
         self.date()
         self.sensor()
+        self.ym = self.y0 + self.clock_height + self.date_height + 2*self.padding
+        self.footer()
         #c.display.show()
 
     def clock(self):
         wr_dashb.font = nrg20
         wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
         clock = c.get_time()
-        half_len = 43
-        x = self.cp_left - half_len
+        x = self.x0 + self.padding
+        y = self.y0 + self.padding
         for idx, t in enumerate(clock):
             for n in t:
-                if int(n) == 1:
-                    wr_dashb.set_textpos(c.display, x + 3, self.yds + self.padding)
+                if n == '1':
+                    wr_dashb.set_textpos(c.display, x + 3, y)
                 else:
-                    wr_dashb.set_textpos(c.display, x, self.yds + self.padding)
+                    wr_dashb.set_textpos(c.display, x, y)
                 wr_dashb.printstring(n)
                 x += 13
-            wr_dashb.set_textpos(c.display, x + 1, self.yds + self.padding)
-            if idx < 2: wr_dashb.printstring(':')
+            wr_dashb.set_textpos(c.display, x + 1, y)
+            if idx < 2:
+                wr_dashb.printstring(':')
             x += 6
         self.clock_height = wr_dashb.font.height()
-        c.display.hline(self.cp_left - half_len, self.clock_height+self.yds, 2 * half_len + 6, c.display.rgb(fss[int(50)]))
-        self.clock_height += self.padding
 
     def date(self):
         wr_dashb.font = arial10
@@ -651,11 +651,13 @@ class Menu:
         d, m, y, w = c.get_date()
         date_str = w + '  ' + d + '.' + m + '.' + y
         date_str_len = wr_dashb.stringlen(date_str)
-        x = self.cp_left - date_str_len // 2 + 3
-        y = self.yds + self.clock_height
+        x = self.cp_left - date_str_len // 2
+        y = self.y0 + self.clock_height
         wr_dashb.set_textpos(c.display, x, y + self.padding)
         wr_dashb.printstring(date_str)
         self.date_height = wr_dashb.font.height() + self.padding
+        c.display.hline(self.x0 + self.padding, y, self.m_width, c.display.rgb(fss[int(50)]))
+        c.display.hline(self.x0 + self.padding, y + self.date_height, self.m_width, c.display.rgb(fss[int(50)]))
 
     def sensor(self):
         font = (nrg10, nrg14, nrg20)
@@ -663,7 +665,7 @@ class Menu:
         bg_color = c.display.rgb(black)
         wr_dashb.setcolor(fg_color, bg_color)
         x = self.m_width
-        y = self.yds + 8
+        y = self.y0 + 8
         wr_dashb.font = font[2]
         y_padding = (wr_dashb.font.height() + 12)
         w = wr_dashb.font.max_width() * 3 + self.padding
@@ -673,12 +675,12 @@ class Menu:
         j = ('°C', '%', 'hPa')
         for idx, d in enumerate((c.temperature, c.humidity, c.pressure)):
             if idx == 0:
-                v = (30 - int(d)) % 100
+                v = (32 - int(d)) % 100
             elif idx == 1:
                 v = int(d) % 100
             else:
-                v = (int(d) - 920) % 100   #TODO sprawdzić zakresy ciśnień atmosferycznych w Polsce
-            if d > 56:
+                v = (80 + (int(d) - 1013)//2) % 100   #TODO sprawdzić zakresy ciśnień atmosferycznych w Polsce
+            if v < 7 or v > 56:
                 fg_color = c.display.rgb(white)
             else:
                 fg_color = c.display.rgb(black)
@@ -697,6 +699,27 @@ class Menu:
             wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
             wr_dashb.set_textpos(c.display, self.cp_right - 24, y + idx * y_padding + 14)
             wr_dashb.printstring(j[idx])
-
-    def _center_point(self, x=0, width=c.display.width):
-        return ((width - x) // 2 + x)
+    def footer(self, footer_no=0):
+        wr_dashb.font = arial10
+        wr_dashb.fgcolor = c.display.rgb(cyan)
+        wr_dashb.bgcolor = c.display.rgb(black)
+        footer_descr = (('L_1', 'THP', 'C&D', 'L_2'), ('1','2','3','4'))
+        x = self.x0 + self.padding
+        y = self.display.height - wr_dashb.font.height() - self.padding
+        cp = 20 # center point of one section
+        for idx, descr in enumerate(footer_descr[footer_no]):
+            if idx == 0:
+                s = descr + '-' + ('A' if c.led1.auto_mode else 'M')
+            elif idx == 1:
+                s = descr
+            elif idx == 2:
+                s = descr
+            elif idx == 3:
+                s = descr + '-' + ('A' if c.led2.auto_mode else 'M')
+            s_len = wr_dashb.stringlen(s)
+            x_str = self.x0 + idx*40 + cp
+            c.display.fill_rect(x_str, y, 40, wr_dashb.font.height()+self.v_padding, c.display.rgb(darkgreen))
+            wr_dashb.set_textpos(c.display, x_str - s_len//2, y)
+            wr_dashb.printstring(s)
+    def _center_point(self, point=0, length=c.display.width):
+        return ((length - point) // 2 + point)

@@ -12,7 +12,7 @@ from cl_palettes import normal_palettes, gradient_palettes  # imports variables 
 from cl_palettes import red, green, blue, white, black, yellow, cyan, magenta, purple, orange, def_colors
 # import uasyncio as asyncio
 import time
-from gui.core.writer import CWriter
+from lib.writer import CWriter
 
 ### from el_effects import Effects
 
@@ -271,11 +271,11 @@ class Controller(Led):
 
     def set_ds(self):
         # DS3231 & RTC initialization
-        self.ds = DS3231(self.i2c)    # real time clock
+
         try:
             self.ds = DS3231(self.i2c)  # real time clock
             # datetime get format = (year, month, monthday, weekday, hour, minute, second, 0)
-            self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds,_ = self.ds.datetime()
+            self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds, _ = self.ds.datetime()
             self.ds_set = True
         except:
             self.set_initial_date_and_time()
@@ -292,7 +292,7 @@ class Controller(Led):
             self.rtc_set = True
         except:
             self.set_initial_date_and_time()
-            self.rtc.datetime((self.year, self.month, self.day,self.day_of_week(self.day,self.month,self.year) , 0, 0, 0, 0))
+            self.rtc.datetime((self.year, self.month, self.day,self.day_of_week(self.year,self.month,self.day) , 0, 0, 0, 0))
             self.rtc_set_flag = True
 
 
@@ -415,10 +415,11 @@ class Controller(Led):
         days = d[month - 1]
         return days if days else (29 if self.leap_year(self.year) else 28)
 
-    def day_of_week(self, day, month, year):
+    def day_of_week(self, year, month, day):
         t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
         year -= month < 3
-        return (year + year // 4 - year // 100 + year // 400 + t[month - 1] + day) % 7
+        return ((year + year // 4 - year // 100 + year // 400 + t[month - 1] + day)-1) % 7
+        # -1 to scale it to 0..6 as in rtc library, changed also in ds3231 driver
 
     def get_name_of_the_day(self, wday, days=('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')):
         return days[wday]
@@ -433,6 +434,7 @@ class Controller(Led):
         y_str = str(self.year)
         m_str = self.prefix(self.month)
         d_str = self.prefix(self.day)
+        print(self.weekday)
         w_str = self.get_name_of_the_day(self.weekday)
         return d_str, m_str, y_str, w_str
 
@@ -443,10 +445,10 @@ class Controller(Led):
         self.hour = hour
         self.minutes = minutes
         self.seconds = seconds
-        self.weekday = self.day_of_week(day, month, year)
-        time = (self.year, self.month, self.day, self.hour, self.minutes, self.seconds, self.weekday)
+        self.weekday = self.day_of_week(year, month, day)
+        time = (self.year, self.month, self.day, self.weekday, self.hour, self.minutes, self.seconds)
         try:
-            # format for setting datetime for ds = (year, month, monthday, hour, minute, second, weekday)
+            # format for setting datetime for ds = (year, month, monthday, weekday, hour, minute, second) - changed in driver
             self.ds.datetime(time)
             self.rtc.datetime(self.ds.datetime())
             self.rtc_set_flag = True
@@ -458,7 +460,7 @@ class Controller(Led):
         self.year = 2024
         self.month = 5
         self.day = 11
-        self.weekday = self.day_of_week(self.day, self.month, self.year)
+        self.weekday = self.day_of_week(self.year, self.month, self.day)
         self.hour = 0
         self.minutes = 0
         self.seconds = 0
@@ -482,7 +484,7 @@ class Controller(Led):
             return str(number)
 
     def check_flags(self):
-        if self.time_refreshed or self.sensor_refreshed or self.controller_reset:
+        if self.time_refreshed or self.sensor_refreshed:
             self.display_refresh = True
 
     def get_data(self):

@@ -1,7 +1,6 @@
 import uctypes
 from machine import bitstream, Pin
 import micropython
-from cl_palettes import Palette
 # normal_palettes, gradient_palettes
 #import numpy as np  # comment in microcontroller - after finish
 from ulab import numpy as np # uncoment on microcontroller

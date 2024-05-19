@@ -45,6 +45,13 @@ def _lcopy(dest:ptr8, source:ptr8, length:int):
         n += 1
 
 class ST7735R(framebuf.FrameBuffer):
+
+    #@staticmethod
+    #def TFTColor(color):
+    #     '''Create a 16 bit rgb value from the given R,G,B from 0-255.
+    #        This assumes rgb 565 layout and will be incorrect for bgr.'''
+    #     return ((color[0]& 0xF8) << 8) | ((color[1] & 0xFC) << 3) | (color[2] >> 3)
+
     # Convert r, g, b in range 0-255 to an 8 bit colour value
     # rrrgggbb. Converted to 12 bit on the fly.
     @staticmethod

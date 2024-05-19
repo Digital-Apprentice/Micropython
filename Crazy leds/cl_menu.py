@@ -3,7 +3,7 @@ from machine import Timer
 
 
 
-from umenu_writer import * # updated Pawel Lugowski's umenu system to use Peter Hinch's nanogui library
+from cl_umenu_writer import * # updated Pawel Lugowski's umenu system to use Peter Hinch's nanogui library
 #from gui.core.writer import CWriter, circle, fillcircle, clip_rect, fill_clip_rect, draw_circle_segment
 #import fonts for the menu
 import uasyncio as asyncio
@@ -198,7 +198,7 @@ class MenuScreen:
 def change_color(arg):
     menu.set_colors(c.display.rgb(fss[arg]),c.display.rgb(black))
 
-menu = Menu(c.display, per_page= 5,line_height=12,x0=0,y0=36,yds=0, m_width=90,menu_header=True)
+menu = Menu(c.display, per_page= 6,line_height=12,x0=0,y0=0, m_width=92,menu_header=True)
 menu.set_screen(MenuScreen('MENU')
             .add(ValueItem('Color menu', 5, 0, len(fss)-1, 1, change_color,1))
             .add(ConfirmItem("Print XXX", (print, 'XXX'), "Do that?", ('yeah, sure!', 'nah, sorry!')))
