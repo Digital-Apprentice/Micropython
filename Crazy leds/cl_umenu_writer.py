@@ -17,6 +17,7 @@ import fonts.nrg20 as nrg20
 import fonts.nrg14 as nrg14
 import fonts.nrg10 as nrg10
 import fonts.arial10 as arial10
+import fonts.TTOTM10 as TTOTM10
 wr_menu = CWriter(c.display, arial10, fgcolor=c.display.rgb(darkyellow), bgcolor=c.display.rgb(black), verbose=False)
 wr_dashb = CWriter(c.display, nrg20, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
 
@@ -246,28 +247,16 @@ class ValueItem(CustomItem, CallbackItem):
         self.callback = callback
 
     def draw(self):
-        
-        '''self.display.aled_fill(0)
-        if hasattr(self.display, 'rich_text'):
-            self.display.text(str.upper(self.name), None, 0, 1, align=CENTER)
-            self.display.rich_text(str(self.value), None, 20, 1, size=5, align=CENTER)
-        else:
-            x_pos = self.display.width - (len(self.name) * 8) - 1
-            self.display.text(str.upper(self.name), x_pos, 0, 1)
-            x_pos = self.display.width - (len(str(self.value)) * 8) - 1
-            self.display.text(str(self.value), x_pos, 20, 1)
 
-        #self.display.hline(0, 10, self.display.width, 1)
-        '''
         #               0        1    2   3      4           5        6          7 
         #m_params = [display, writer,x0, y0, line_height, m_width, per_page, v_padding]
         #                        
         #a_i_v_pos = y_v_padding
         
         x = m_params[2]+m_params[5]
-        w = 25
+        w = m_params[1].font.max_width()*3+3
         m_params[0].fill_rect(x - w, a_i_v_pos - m_params[7], w, m_params[4], m_params[1].fgcolor)
-        m_params[1].set_textpos(m_params[0], x - 22, a_i_v_pos)
+        m_params[1].set_textpos(m_params[0], x - w + 3, a_i_v_pos)
         m_params[1].printstring(self.get_decorator(), 1)
         #print('x-10:     ', x) # debug purposes only
         self.display.show()
@@ -520,16 +509,16 @@ class Menu:
         else:
             self.display.fill(0)
         if type(self.current_screen) is not MenuScreen:
-            print('type(self.current_screen inside if): ',type(self.current_screen))
+            print('!!  current_screen inside if): ',type(self.current_screen))
             self.current_screen.draw()
             return
-        print('type(self.current_screen) - outside if: ', type(self.current_screen))
+        print('$$ current_screen) - outside if>>: ', type(self.current_screen))
         #self.display.fill(0)
 
         if self.menu_header:
             self._menu_header(self.current_screen.title)
 
-        print('self.current_screen.title',self.current_screen.title)
+        print('## self.current_screen.title:    ',self.current_screen.title)
         #c.display.fill_rect(self.x0, self.y0, self.m_width, self.menu_height, c.display.rgb(black))
         elements = self.current_screen.count()
         start = self.current_screen.selected - self.per_page + 1 if self.current_screen.selected + 1 > self.per_page else 0
@@ -585,7 +574,7 @@ class Menu:
             background = self.bgcolor
         self.display.fill_rect(x, y, self.m_width, self.line_height, background)
         # item name
-        self.writer.set_textpos(self.display,x + 1,y_v_padding)
+        self.writer.set_textpos(self.display,x + 1, y_v_padding)
         self.writer.printstring(item.name, item.is_active)
         # value or decorator
         self.writer.set_textpos(self.display, x + self.m_width - self.writer.stringlen(item.get_decorator())-2, y_v_padding)
@@ -596,7 +585,7 @@ class Menu:
         y = self.y0 + self.ym
         self.writer.set_textpos(self.display, x + int((self.m_width / 2) - (self.writer.stringlen(text) / 2)), y)
         self.writer.printstring(str.upper(self.current_screen.title), 0)
-        self.display.hline(x,y + self.font_height, self.m_width, self.fgcolor)
+        self.display.hline(x, y + self.font_height, self.m_width, self.fgcolor)
 
     def not_background(self,background):
         if background == self.bgcolor:
@@ -620,7 +609,7 @@ class Menu:
         self.clock()
         self.date()
         self.sensor()
-        self.ym = self.y0 + self.clock_height + self.date_height + 2*self.padding
+        self.ym = self.y0 + self.clock_height + self.date_height + self.padding
         self.footer()
         #c.display.show()
 
@@ -675,11 +664,11 @@ class Menu:
         j = ('°C', '%', 'hPa')
         for idx, d in enumerate((c.temperature, c.humidity, c.pressure)):
             if idx == 0:
-                v = (32 - int(d)) % 100
+                v = max((30 - int(d)), 0)
             elif idx == 1:
-                v = int(d) % 100
+                v = int(d)
             else:
-                v = (80 + (int(d) - 1013)//2) % 100   #TODO sprawdzić zakresy ciśnień atmosferycznych w Polsce
+                v = min((85 + (int(d) - 1013)//3), 100)   #TODO sprawdzić zakresy ciśnień atmosferycznych w Polsce
             if v < 7 or v > 56:
                 fg_color = c.display.rgb(white)
             else:
@@ -699,27 +688,40 @@ class Menu:
             wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
             wr_dashb.set_textpos(c.display, self.cp_right - 24, y + idx * y_padding + 14)
             wr_dashb.printstring(j[idx])
-    def footer(self, footer_no=0):
+    def footer(self):
         wr_dashb.font = arial10
-        wr_dashb.fgcolor = c.display.rgb(cyan)
-        wr_dashb.bgcolor = c.display.rgb(black)
-        footer_descr = (('L_1', 'THP', 'C&D', 'L_2'), ('1','2','3','4'))
-        x = self.x0 + self.padding
+        dashb_fg_color = (c.display.rgb(white), c.display.rgb(black))
+
+        #wr_dashb.bgcolor = c.display.rgb(white)
+        footer_descr = ('L1', 'T H P', 'TIME', 'L2')
+        button_colors = (c.display.rgb(red), c.display.rgb(green), c.display.rgb(darkorange))
         y = self.display.height - wr_dashb.font.height() - self.padding
         cp = 20 # center point of one section
-        for idx, descr in enumerate(footer_descr[footer_no]):
+        for idx, descr in enumerate(footer_descr):
             if idx == 0:
                 s = descr + '-' + ('A' if c.led1.auto_mode else 'M')
+                color = button_colors[c.led1.led_active]   # + c.led1.auto_mode]
+                wr_dashb.fgcolor = dashb_fg_color[c.led1.led_active]
             elif idx == 1:
                 s = descr
+                color = button_colors[c.sensor_led]
+                wr_dashb.fgcolor = dashb_fg_color[c.sensor_led]
             elif idx == 2:
                 s = descr
+                color = button_colors[c.clock_led]
+                wr_dashb.fgcolor = dashb_fg_color[c.clock_led]
             elif idx == 3:
                 s = descr + '-' + ('A' if c.led2.auto_mode else 'M')
+                color = button_colors[c.led2.led_active]   # + c.led2.auto_mode]
+                wr_dashb.fgcolor = dashb_fg_color[c.led2.led_active]
             s_len = wr_dashb.stringlen(s)
-            x_str = self.x0 + idx*40 + cp
-            c.display.fill_rect(x_str, y, 40, wr_dashb.font.height()+self.v_padding, c.display.rgb(darkgreen))
-            wr_dashb.set_textpos(c.display, x_str - s_len//2, y)
+            x = self.x0 + idx*40
+            fill_clip_rect(c.display, x, y - self.padding, 38, wr_dashb.font.height() + self.padding,  color)
+            wr_dashb.bgcolor = color
+            wr_dashb.set_textpos(c.display, x+cp - s_len//2, y)
             wr_dashb.printstring(s)
+
+        c.display.hline(self.x0, y - 2*self.padding-2, c.display.width, c.display.rgb(white))
+
     def _center_point(self, point=0, length=c.display.width):
         return ((length - point) // 2 + point)

@@ -157,9 +157,7 @@ class Controller(Led):
         self.progress(1)
         self.init_hardware()
         self.clock_led = True  # display clock on addressable leds
-        self.humidity_led = False  # display humidity on addressable leds
-        self.temperature_led = False  # display temperature on addressable leds
-        self.pressure_led = False  # display pressure on addressable leds
+        self.sensor_led = False  # display temperature, humidity and pressure on addressable leds
         self.buzzer_active = True
         self.controller_reset = False
         self.display_refresh = True

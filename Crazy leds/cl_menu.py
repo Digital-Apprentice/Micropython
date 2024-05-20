@@ -198,33 +198,65 @@ class MenuScreen:
 def change_color(arg):
     menu.set_colors(c.display.rgb(fss[arg]),c.display.rgb(black))
 
-menu = Menu(c.display, per_page= 6,line_height=12,x0=0,y0=0, m_width=92,menu_header=True)
+menu = Menu(c.display, per_page= 6,line_height=12,x0=0,y0=0, m_width=92,menu_header=False)
 menu.set_screen(MenuScreen('MENU')
             .add(ValueItem('Color menu', 5, 0, len(fss)-1, 1, change_color,1))
             .add(ConfirmItem("Print XXX", (print, 'XXX'), "Do that?", ('yeah, sure!', 'nah, sorry!')))
             .add(InfoItem('LED1:', str(c.led1.led_active)))
             .add(InfoItem('LED2:', str(c.led2.led_active)))
+            .add(SubMenuItem('Main Info')
+                .add(InfoItem('Status:', 'ok'))
+                .add(InfoItem('Temp:', '45.1')))
+            .add(SubMenuItem('! piwer')
+                .add(InfoItem('Status:', '1'))
+                .add(InfoItem('Temp:', '10')))
+            .add(SubMenuItem('2 dodifiof')
+                 .add(InfoItem('Status:', '2'))
+                .add(InfoItem('Temp:', '20')))
+            .add(SubMenuItem('3 dododo')
+                 .add(InfoItem('Status:', '3'))
+                 .add(InfoItem('Temp:', '30')))
             )
 menu.draw()
 
 
 async def switch_handler():
-    r = c.encoder
     while True:
         if c.display_refresh:  # display refresh is needed
             #print(c.hour,c.minutes,c.seconds,c.year,c.month,c.day,c.weekday)
             #print(c.temperature,c.humidity,c.pressure)
             c.display_refresh = False
             menu.draw()
-            
-        if r.value() != 0:
-            menu.move(r.value())
-            r.value(0)
+        if c.encoder.value() != 0:
+            menu.move(c.encoder.value())
+            c.encoder.value(0)
             c.beep(1)
-        if r.state_value() != 0:
+        if c.encoder.state_value() != 0:
             menu.click()
-            r.clear_button_state()
+            c.encoder.clear_button_state()
             c.beep()
+        if c.b_left.state_value() != 0:
+            if c.b_left.state_value() == 1:
+                c.led1.led_active = not c.led1.led_active
+            elif c.b_left.state_value() == -1:
+                c.led1.auto_mode = not c.led1.auto_mode
+            c.b_left.clear_button_state()
+            c.display_refresh = True
+        if c.b_right.state_value() != 0:
+            if c.b_right.state_value() == 1:
+                c.led2.led_active = not c.led2.led_active
+            elif c.b_right.state_value() == -1:
+                c.led2.auto_mode = not c.led2.auto_mode
+            c.b_right.clear_button_state()
+            c.display_refresh = True
+        if c.b_minus.state_value() != 0:
+            c.sensor_led = not c.sensor_led
+            c.b_minus.clear_button_state()
+            c.display_refresh = True
+        if c.b_plus.state_value() != 0:
+            c.clock_led = not c.clock_led
+            c.display_refresh = True
+            c.b_plus.clear_button_state()
         asyncio.sleep_ms(80)
 
 
