@@ -141,6 +141,7 @@ class RotaryEncoder(Button):
         self.pin_B = Pin(pin_B,Pin.IN,Pin.PULL_UP if powering == 'GND' else Pin.PULL_DOWN)
         self.pin_A.irq(handler=self.__encoder_handler)
         self.__last_pin_A_value = self.pin_A.value()
+        self._encoder_value = 0
         if switch_pin:
             super().__init__(switch_pin, powering)
         self.step(step)
@@ -149,23 +150,23 @@ class RotaryEncoder(Button):
                 
     def __encoder_handler(self, pin):
         pin_A_value = self.pin_A.value()
-        if self._direction == 'CW':
-            __step_value = self._step
-        else:
-            __step_value = -self._step
+        #if self._direction == 'CCW':
+        #    __step_value = self._step
+        #else:
+        #    __step_value = -self._step
         if pin_A_value != self.__last_pin_A_value:
             if self.pin_B.value() != pin_A_value:
-                self._encoder_value += __step_value
-                if self._direction == 'CW':
-                    self._action = '+'
-                else:
-                    self._action = '-'
+                self._encoder_value += self._step
+                #if self._direction == 'CW':
+                #    self._action = '+'
+                #else:
+                #    self._action = '-'
             else:
-                self._encoder_value -= __step_value
-                if self._direction == 'CW':
-                    self._action = '-'
-                else:
-                    self._action = '+'
+                self._encoder_value -= self._step
+                #if self._direction == 'CW':
+                #    self._action = '-'
+                #else:
+                #    self._action = '+'
         self.__last_pin_A_value = self.pin_A.value()
 
     def value(self, value=None):
@@ -186,6 +187,8 @@ class RotaryEncoder(Button):
         else:
             if direction == ('CW' or 'CCW'):
                 self._direction = direction
+                if self._direction == 'CCW':
+                    self._step *= -1
             else:
                 self._direction = 'CW'
                 
