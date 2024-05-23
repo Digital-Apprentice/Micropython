@@ -106,21 +106,22 @@ gradient_palettes = (bhw4_057, bhw3_07)
 
 class GammaTable:
     
-    def __init__ (self, gamma_factor=2.2, color_space: int = 8):
+    def __init__ (self, gamma_factor: float = 2.2, color_space: int = 8):
 
         self._gamma_factor = gamma_factor
         self._color_space = color_space
         #self.gamma_factor(gamma_factor)
         #self.color_space(color_space)
-        self.create_gamma_table(self._gamma_factor,self._color_space)
+        self.create_gamma_table(self._gamma_factor, self._color_space)
 
     def create_gamma_table(self, gamma_factor, color_space):  # 8-bit brightness space, only one table for all colors
         self.gamma_factor(gamma_factor)
         self.color_space(color_space)
         self.gamma_table = [] 
         i = 0
-        for i in range(self._color_space):
-            self.gamma_table.append(round(self._color_space * (i / self._color_space) ** self._gamma_factor + 0.4))
+        for i in range(self.__color_space):
+            #print('col_spa ',i,'   :   ',self._color_space, self._color_space * (i / self._color_space))
+            self.gamma_table.append(round(self.__color_space * (i / self.__color_space) ** self._gamma_factor + 0.4))
             
     def _get_gamma(self, position):
         return self.gamma_table[position]
@@ -143,7 +144,8 @@ class GammaTable:
         if color_space == None:
             return self._color_space
         else:
-            self._color_space = 2**color_space
+            self._color_space = color_space
+            self.__color_space = 2**color_space
     def clear_gamma_table(self):
         try:
             self.gamma_table.clear()

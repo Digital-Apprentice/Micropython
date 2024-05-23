@@ -81,7 +81,10 @@ class Led(Segment):
         self.led_palette_active = False
         self.led_palette_gamma_corrected = False
         self.led_palette = []
-        self.set_led_palette()
+        self.palette_no = 0
+        self.palette_length = None
+        self.palette_gradient = False
+        self.set_led_palette( pal_length=self.palette_length, palette_no=self.palette_no, gradient=self.palette_gradient)
         self.led_active = False
         self.device_brightness = 7
         self.general_speed = 5
@@ -144,8 +147,8 @@ class Controller(Led):
         self.first_run = True
         self.ds_set = False
         self.rtc_set = False
-        self.time_refreshed = False
-        self.sensor_refreshed = False
+        self.time_refreshed = False         # used to check if time was updated
+        self.sensor_refreshed = False       # used to check if sensor data was updated
         self.display = None
         self.display_brightness = 7
         self.display_active = True
@@ -162,7 +165,7 @@ class Controller(Led):
         self.controller_reset = False
         self.display_refresh = True
         self.progress(1)
-        
+
     def progress(self, n):
         # Initialise and clear display.
         if n == 0:
@@ -180,17 +183,15 @@ class Controller(Led):
     # hardware initialization section
     def init_hardware(self):
 
-        self.progress(1)
         self.gc_mem_free()
         self.set_i2c()
         self.progress(1)
         self.set_ds()
-        self.progress(1)
         self.set_bme()
+        self.set_rtc()
         self.progress(1)
         self.set_i2s()
         self.progress(1)
-        self.set_rtc()
         self.set_buzzer()
         self.progress(1)
         self.set_buttons()
@@ -300,9 +301,9 @@ class Controller(Led):
         self.b_right = Button(26, powering='GND')
         self.b_minus = Button(33, powering='GND')
         self.b_plus = Button(25, powering='GND')
-        self.b_light = Button(39, powering='POS')
-        self.b_set_rtc = Button(36, powering='POS')
-        self.encoder = RotaryEncoder(17, 16, 12, powering='GND', direction='CW')
+        self.b_light = Button(17, powering='GND')
+        self.b_set_rtc = Button(16, powering='GND')
+        self.encoder = RotaryEncoder(34, 35, 36, powering='GND', direction='CW')
 
     def set_buzzer(self):
         # Buzzer configuration
@@ -344,7 +345,7 @@ class Controller(Led):
         # memoryview of the buffers
         tl_mv = memoryview(tl_leds_buffer)
         # LED strip object initialization
-        tl_leds = Aleds(0, tl_mv, n, bpp=3, order=[1, 0, 2, 3])  # init of three led lines NeoPix object
+        tl_leds = Aleds(3, tl_mv, n, bpp=3, order=[1, 0, 2, 3])  # init of three led lines NeoPix object
         self.progress(1)
         # Segments of the three led lines
         seg5 = Segment(5, tl_leds_buffer[:], tl_leds)  # all leds
@@ -368,6 +369,14 @@ class Controller(Led):
 
     def gc_mem_free(self):
         gc.mem_free()  # free memory
+
+    def buzzer_sound(self, state='On'):
+        if state == 'On':
+            self.buzzer_active = True
+        elif state == 'Off':
+            self.buzzer_active = False
+        return
+
     def beep(self, duration=10):
         if self.buzzer_active:
             self.buzzer.on()
@@ -490,4 +499,60 @@ class Controller(Led):
         self.get_sensor_data()
         self.check_flags()
 
+    #gamma table and set palettes section
+    def gamma_activation(self, arg: str):
+        if arg == 'On':
+            self.gamma = True
+            self.reset_gamma_table()
+        elif arg == 'Off':
+            self.gamma = False
+            self.gamma_table.clear_gamma_table()
+            self.reset_palettes()
 
+    def change_gamma_factor(self, arg: float):
+        if self.gamma_table.gamma_factor() != arg:
+            self.gamma_table.gamma_factor(arg)
+            self.reset_gamma_table()
+        else:
+            return
+
+    def change_color_space(self, arg: int):
+        if self.gamma_table.color_space() != arg:
+            self.gamma_table.color_space(arg)
+            self.reset_gamma_table()
+        else:
+            return
+    def get_gamma_length(self):
+        return str(len(self.gamma_table.gamma_table))
+    def reset_gamma_table(self):
+        if self.gamma == True:
+            self.gamma_table.clear_gamma_table()
+            self.gamma_table.create_gamma_table(self.gamma_table.gamma_factor(), self.gamma_table.color_space())
+            if self.led1.led_palette_active == True or self.led1.led_palette_active == True:
+                self.reset_palettes()
+        else:
+            return
+
+    def reset_palettes(self):
+
+        if self.led1.led_palette_active == True:
+            self.led1.set_led_palette( pal_length=self.led1.palette_length, palette_no=self.led1.palette_no, gradient=self.led1.palette_gradient)
+            if self.gamma == True:
+                if self.led1.led_palette_gamma_corrected == False:
+                    self.led1.led_palette = self.gamma_table.gamma_cor(self.led1.led_palette)
+                    self.led1.led_palette_gamma_corrected = True
+            else:
+                self.led1.led_palette_gamma_corrected = False
+        else:
+            return
+
+        if self.led2.led_palette_active == True:
+            self.led2.set_led_palette(pal_length=self.led2.palette_length, palette_no=self.led2.palette_no, gradient=self.led2.palette_gradient)
+            if self.gamma == True:
+                if self.led2.led_palette_gamma_corrected == False:
+                    self.led2.led_palette = self.gamma_table.gamma_cor(self.led2.led_palette)
+                    self.led2.led_palette_gamma_corrected = True
+            else:
+                self.led2.led_palette_gamma_corrected = False
+        else:
+            return

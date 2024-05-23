@@ -1,9 +1,3 @@
-try:
-    from display import CENTER, RIGHT
-except ImportError:
-    CENTER = 1
-    RIGHT = 2
-from array import array
 # updated Pawel Lugowski's umenu system (https://github.com/plugowski/umenu)
 # with Peter Hinch's writer library and st7735r driver (https://github.com/peterhinch/micropython-font-to-py)
 # writer library allows rendering text to a monochrome or colour display having a suitable device driver
@@ -17,7 +11,6 @@ import fonts.nrg20 as nrg20
 import fonts.nrg14 as nrg14
 import fonts.nrg10 as nrg10
 import fonts.arial10 as arial10
-import fonts.TTOTM10 as TTOTM10
 wr_menu = CWriter(c.display, arial10, fgcolor=c.display.rgb(darkyellow), bgcolor=c.display.rgb(black), verbose=False)
 wr_dashb = CWriter(c.display, nrg20, fgcolor=c.display.rgb(white), bgcolor=c.display.rgb(black), verbose=False)
 
@@ -30,9 +23,6 @@ def active_item_v_pos(y_v_padding):
     # cross method for passing active item vertical position
     global a_i_v_pos
     a_i_v_pos = y_v_padding
-
-# Convert r, g, b in range 0-255 to an 8 bit colour value
-# rrrgggbb. Converted to 12 bit on the fly.
 
 class MenuItem():
 
@@ -504,7 +494,8 @@ class Menu:
         self.draw()
 
     def draw(self):
-        if self.draw_default:
+
+        if self.draw_default and self.current_screen.title == 'MAIN MENU':
             self.draw_default_data()
         else:
             self.display.fill(0)
@@ -518,7 +509,7 @@ class Menu:
         if self.menu_header:
             self._menu_header(self.current_screen.title)
 
-        print('## self.current_screen.title:    ',self.current_screen.title)
+        print('## self.current_screen.title:    ', self.current_screen.title)
         #c.display.fill_rect(self.x0, self.y0, self.m_width, self.menu_height, c.display.rgb(black))
         elements = self.current_screen.count()
         start = self.current_screen.selected - self.per_page + 1 if self.current_screen.selected + 1 > self.per_page else 0
@@ -545,7 +536,7 @@ class Menu:
         self.set_globals()
 
     def set_colors(self, fgcolor, bgcolor):
-        # colors have to be passed in rgb555 format
+        # colors have to be passed in 12-bit format
         self.fgcolor = fgcolor
         self.bgcolor = bgcolor
         self.writer.setcolor(self.fgcolor, self.bgcolor)
@@ -567,6 +558,7 @@ class Menu:
         y = self.y0 + self.ym + menu_y_end + (pos * self.line_height)
         v_padding = int((self.line_height - self.font_height) / 2)
         y_v_padding = y + v_padding
+        default_color = self.bgcolor
         if item.is_active:
             background = self.fgcolor
             active_item_v_pos(y_v_padding) # a_i_v_pos method format: y_v_padding
@@ -688,6 +680,17 @@ class Menu:
             wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
             wr_dashb.set_textpos(c.display, self.cp_right - 24, y + idx * y_padding + 14)
             wr_dashb.printstring(j[idx])
+
+    def header(self):
+        wr_dashb.font = arial10
+        clock = c.get_time()
+        date = c.get_date()
+        wr_dashb.setcolor(c.display.rgb(white), c.display.rgb(black))
+        wr_dashb.set_textpos(c.display, self.x0 + 1, self.y0 + 1)
+        wr_dashb.printstring(clock[0]+':'+clock[1]+':'+clock[2]+ ' | ' + date[3] + ' ' + date[0] + '.' + date[1] + '.' + date[2])
+        wr_dashb.set_textpos(c.display, self.x0 + 1, self.y0 + 1+self.writer.font.height()+self.padding)
+        wr_dashb.printstring('T: ' + str(c.temperature) + ' °C | H: ' + str(c.humidity) + ' % | P: ' + c.pressure + ' hPa')
+        c.display.hline(self.x0, self.y0 + 2*self.writer.font.height()+ self.padding, c.display.width, c.display.rgb(white))
     def footer(self):
         wr_dashb.font = arial10
         dashb_fg_color = (c.display.rgb(white), c.display.rgb(black))
