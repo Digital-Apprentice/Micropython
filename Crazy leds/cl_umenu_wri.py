@@ -434,7 +434,7 @@ class MenuScreen:
 class Menu:
     current_screen = None  # type: MenuScreen | CustomItem
 
-    def __init__(self, display,writer=wr_menu,per_page: int = 5, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True, draw_default = True):
+    def __init__(self, display,writer=wr_menu,per_page: int = 5, line_height: int = 0, x0: int = 0, y0: int = 0, m_width: int = None, menu_header=True, draw_default=True):
 
         self.display = display  # display driver
         self.writer = writer  # CWriter(display,font, self.fgcolor,self.bgcolor,verbose=True)
@@ -495,7 +495,7 @@ class Menu:
 
     def draw(self):
 
-        if self.draw_default and self.current_screen.title == 'MAIN MENU':
+        if self.draw_default:
             self.draw_default_data()
         else:
             self.display.fill(0)
@@ -660,7 +660,7 @@ class Menu:
             elif idx == 1:
                 v = int(d)
             else:
-                v = min((85 + (int(d) - 1013)//3), 100)   #TODO sprawdzić zakresy ciśnień atmosferycznych w Polsce
+                v = min((85 + (int(d) - 1013)//3), 100)
             if v < 7 or v > 56:
                 fg_color = c.display.rgb(white)
             else:
