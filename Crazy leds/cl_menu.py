@@ -30,26 +30,32 @@ def etm(name,screen):
 
 class Lists(CustomItem):
 
-    def __init__(self, name, led, list_type):
+    def __init__(self, name, led, title, decorator, list_type):
         super().__init__(name)
-        self.decorator = '_/\_'
-        self.list_type = list_type
         self._menu = None
+        self.decorator = decorator
         self.led = led
-        self.title = name + '-Effect types'
-        
-
+        self.title = name + '-' + title
+        self.list_type = list_type
 
     def prepare_menu(self):
+        # prepare the menu for the first list of LED menu (type of effects)
+        # the menu takes up the entire screen
+        # refreshing every second is suspended and is only performed when there is a change in the menu-+
+
         self._menu = Menu(c.display, per_page=5, x0=0, y0=0, m_width=158, menu_header=True, draw_default=False)
 
-    def prepare_list(self):
+    def prepare_screen(self):
         self._screen = MenuScreen(self.title, self.parent)
+
+    def prepare_list(self):
+
         if self.list_type == 0:
+            self.prepare_screen()
             self.prepare_menu()
-            list_of_types = ['Light Effects', 'Gravity Effects', 'Sound Effects', 'Physical Effects']
-            for idx, eff_type in enumerate(list_of_types):
-                self._screen.add(CustomItem(eff_type),self.parent)
+            list_of_types =self.effects_menu(self.list_type)
+        for idx, eff_type in enumerate(list_of_types):
+            self._screen.add(CustomItem(eff_type),self.parent)
 
             self._menu.set_screen(self._screen)
         elif self.list_type == 1:
@@ -72,6 +78,61 @@ class Lists(CustomItem):
         if self._menu is None:
             self.prepare_list()
         self._menu.draw()
+
+
+def effects_menu(self, effect_type):
+    light_eff = ['Solid', 'Rainbow', 'Comet', 'Storm', 'Sparks', 'Madelaine', 'Mixer', 'Heartbeat']
+    gravity_eff = ['Springs', 'Pong', 'Pendulum', 'Rolling stones', 'Rain', 'Snow', 'Particles', 'Sandglass']
+    sound_eff = ['Spectrum', 'VU Meter', 'Sound Waves', 'Sound Particles', 'Sound Rush']
+    physical_eff = ['Clock', 'Sensors data', 'All together', 'Temperature', 'Humidity', 'Pressure']
+    effects = (light_eff, gravity_eff, sound_eff, physical_eff)
+    self.effect_type = effect_type
+    return effects[effect_type], len(effects[effect_type])
+def params_menu(self, params_list_no, params_type):
+    # params_list_no - number of the list of parameters for the effect
+    # params_type - type of the parameters, 0 - effect, 1 - settings, 9 - defined values
+
+    params_dict = {0: ('Params set', 0, None), 1: ('Brightness', 0, 7), 2: ('Speed', 0, 10), 3: ('Quantity', 1, 50),
+                   4: ('Step', 0, None), 5: ('Color step', 0, None),
+                   6: ('Dynamic color', False, True), 7: ('Length', 0, None), 8: ('Sections', 0, None),
+                   9: ('Direction', -1, 1), 10: ('Delay time', 0, 300,),
+                   11: ('Wait time', 0, 5000), 12: ('Random factor', 0.0, 1.0), 13: ('Position offset', 0, None),
+                   14: ('Effect mode', 0, 3),
+                   15: ('Multiplier mode', 0, 10), 16: ('Color mode', 0, 6), 17: ('Col mix method', 0, 2),
+                   18: ('Solid color', False, True),
+                   30: ('Primary Color', 0, None, self.color_menu()),
+                   31: ('Secondary Color', 0, None, self.color_menu()), 32: ('Third color', 0, None, self.color_menu()),
+                   33: ('Palette-grd', 0, None), 34: ('Palette-std', 0, None),
+                   50: ('Buzzer', 0, 1), 51: ('LCD Brightness', 0, 10)}
+
+    # None means maximum value of the parameter, for colors 'DC' means defined colors, None means length of the palette
+    # None for set means max number in set
+    # False, True means False - off, True - on
+    # -1,1 means -1 - counterclockwise, 1 - clockwise
+    # TODO zrealizować dodatkowe menu do wyboru kolorów - zdefiniowanych, z palet lub ustawienie własnej wartości RGB
+
+    l_rainbow = (2, 5, 6, 9)
+    settings = (50, 51)
+    # TODO: implement the rest of the parameters
+    if params_type == 0:
+        sub_list = (l_rainbow,)
+    elif params_type == 1:
+        sub_list = (settings,)
+    elif params_type == 9:
+        sub_list = (def_colors,)
+    params = list(params_dict.get(x) for x in sub_list[params_list_no])
+    return params, len(params)
+
+def color_menu(self, pal_type=0, palette_no=0):
+    # TODO zaimplementować kolory z Aleds
+    defined_colors = (
+    'red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'purple', 'orange', 'pink', 'dark slate gray', 'dark green',
+    'dark blue', 'dark red', 'dark orange', 'dark magenta', 'dark cyan', 'dark violet', 'white', 'black')
+    n_pal = normal_palettes[0]
+    gr_pal = gradient_palettes[0]
+    self.colors_list = (defined_colors, n_pal, gr_pal)  # list of color palettes
+    colors_menu = ['Std Palette', 'Grd Palette', 'Defined colors']
+    return colors_menu[pal_type[palette_no]], len(colors_menu)
 
 """
 class EffectList(CustomItem):
@@ -122,7 +183,7 @@ menu.set_screen(screen
                 .add(ValueItem('Color of menu', 15, 0, len(fss) - 1, 1, change_menu_color, 1))
                 .add(EnumItem("Buzzer", ['On', 'Off'], c.buzzer_sound, 0)))
             .add(etm('LED1', screen))
-            .add(Lists('LED2',2,0))
+            .add(Lists('LED2',2,'Effect types, '_/\_', 0))
             .add(SubMenuItem('Main Info')
                 .add(InfoItem('Status:', 'ok'))
                 .add(InfoItem('Temp:', '45.1')))
@@ -180,39 +241,13 @@ asyncio.run(switch_handler())
 class Menu(object):
     
     def __init__(self, name, top=None, btm=None, sub=None, eff=None, param=None):
-        self.menu_type = name                  # name of the menu
-        self.item_highlighted = None
-        self.item_selected = None           # current selected item - which item is chosen
-        #self.item_previous = None          # previous item - used in the menu screen to draw the item before the selected one
-        #self.item_next = None              # next item - used in the menu screen to draw next item after the selected one
-        self.active = False                 # is the menu active
-        self.menu_level_no = 0              # menu level - deepness of the menu, 0 is the default menu
-        self.btm_no = btm                   # bottom menu number
-        self.top_no = top                   # top menu number
-        self.sub_no = sub                   # type of effects - number of submenu
+        
         self.effect_type = eff                # number of the effect
         self.param_no = param               # parameter level - deepness of the parameter, 0 is the default parameter
         self.effect_selected= 0             # selected effect
         self.params_list_selected = 0       # selected list of parameters
         self.params_set = 0                 # selected set of parameters
 
-
-
-
-    def bottom_menu(self,btm_no):
-        btm_menu = [['Effects','Elephants','TLines','Settings'],['','+1','+10','Back'],['Auto','Manual','','Back']]
-        self.btm_no = btm_no
-        return btm_menu[self.btm_no], len(btm_menu[self.btm_no])
-
-    def top_menu(self,top_no):
-        top_menu = ['Brightness','Clock ThreeLines',]
-        self.top_no = top_no
-        return top_menu[self.top_no], len(top_menu[self.top_no])
-
-    def sub_menu(self, sub_no):
-        sub_menu = ['Light Effects','Gravity Effects','Sound Effects','Physical Effects']
-        self.sub_no = sub_no
-        return sub_menu[self.sub_no], len(sub_menu[self.sub_no])
 
     def effects_menu(self, effect_type):
 
@@ -278,65 +313,4 @@ class Menu(object):
         return colors_menu[pal_type[palette_no]], len(colors_menu)
 
 
-'''
-
-
-'''
-class MainScreen(CustomItem):
-    def __init__(self, name):
-        super().__init__(name)
-        self._menu = None
-
-    def bottom_menu(self,btm_no):
-        btm_list = [['Effects','Elephants','TLines','Settings'],['','+1','+10','Back'],['Auto','Manual','','Back']]
-        return btm_list[btm_no]
-
-    def time_date(self, time, date):
-
-        wr_dashb.set_textpos(0, 0)
-        wr_dashb.printstring('12:34:56')
-        wr_dashb.set_textpos(0, 100)
-        wr_dashb.printstring(str(c.day) + '.' + str(c.month) + '.' + str(c.year))
-
-
-
-
-
-
-
-
-class ParamsList(CustomItem):
-
-    def __init__(self, name):
-        super().__init__(name)
-        self._menu = None
-
-    def prepare_list(self):
-        files = os.listdir()
-        self._menu = Menu(c.display, wr_menu, arial10, per_page = 4,x0 = 40, y0 = 20,m_width = 120)
-        screen_etm = MenuScreen('Parameters', self.parent)
-        for file in files:
-            screen_etm.add(FilePreview(file))
-        self._menu.set_screen(screen_etm)
-
-    def up(self):
-        self._menu.move(-1)
-
-    def down(self):
-        self._menu.move()
-
-    def select(self):
-        self._menu.click()
-        return self
-
-    def draw(self):
-        if self._menu is None:
-          ! self.prepare_list()
-        self._menu.draw()
-
-
-
-menu = Menu(c.display, wr1, arial10, per_page = 1,x0 = 0, y0 = 0,menu_header=False)
-menu.set_screen(MenuScreen('').add(MainScreen('Show files')))
-menu.draw()
 '''
