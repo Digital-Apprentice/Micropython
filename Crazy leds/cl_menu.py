@@ -5,81 +5,75 @@ from cl_palettes import full_saturation_spectrum as fss
 
 def change_menu_color(arg):
     menu.set_colors(c.display.rgb(fss[arg]), c.display.rgb(black))
-'''
-class EffectTypeList2(CustomItem):
 
-    def __init__(self, name, ):
+
+def effects_menu(effect_type):
+
+    list_of_types = ['Light Effects','Gravity Effects','Sound Effects','Physical Effects']
+
+    light_eff = ['Solid','Rainbow','Comet','Storm','Sparks','Madelaine','Mixer','Heartbeat']
+    gravity_eff = ['Springs','Pong','Pendulum','Rolling stones','Rain','Snow','Particles','Sandglass']
+    sound_eff = ['Spectrum','VU Meter','Sound Waves','Sound Particles','Sound Rush']
+    physical_eff = ['Clock','Sensors data','All together','Temperature','Humidity','Pressure']
+    effects = (light_eff,gravity_eff,sound_eff,physical_eff)
+    effect_type = effect_type
+    return effects[effect_type], len(effects[effect_type])
+
+
+def etm(name,screen):
+    etm_menu = SubMenuItem(name)
+    list_of_types = ['Light Effects', 'Gravity Effects', 'Sound Effects', 'Physical Effects']
+    for idx, eff_type in enumerate(list_of_types):
+        etm_menu.add(SubMenuItem(eff_type))
+    return etm_menu
+
+
+class Lists(CustomItem):
+
+    def __init__(self, name, led, list_type):
         super().__init__(name)
-        self.effects_type_menu = None
+        self.decorator = '_/\_'
+        self.list_type = list_type
+        self._menu = None
+        self.led = led
+        self.title = name + '-Effect types'
+        
+
+
+    def prepare_menu(self):
+        self._menu = Menu(c.display, per_page=5, x0=0, y0=0, m_width=158, menu_header=True, draw_default=False)
 
     def prepare_list(self):
-        list_of_types = ['Light Effects', 'Gravity Effects', 'Sound Effects', 'Physical Effects']
-        self.effects_type_menu = Menu(c.display, wr_menu, per_page=5, x0=0, y0=0, m_width=158,menu_header=True,draw_default=False)
-        builder = MenuScreen('Effects', self.parent)
+        self._screen = MenuScreen(self.title, self.parent)
+        if self.list_type == 0:
+            self.prepare_menu()
+            list_of_types = ['Light Effects', 'Gravity Effects', 'Sound Effects', 'Physical Effects']
+            for idx, eff_type in enumerate(list_of_types):
+                self._screen.add(CustomItem(eff_type),self.parent)
 
-        for eff_type in list_of_types:
-            builder.add(SubMenuItem(eff_type))
-        self.effects_type_menu.set_screen(builder)
-
+            self._menu.set_screen(self._screen)
+        elif self.list_type == 1:
+            pass
     def up(self):
-        self.effects_type_menu.move(-1)
+        self._menu.move(-1)
 
     def down(self):
-        self.effects_type_menu.move()
+        self._menu.move()
 
     def select(self):
-        self.effects_type_menu.click()
-        return self.parent
+        item = self._screen.get(self._screen.selected)
+        print('item',type(item))
+        if type(item) is BackItem:
+            return self.parent
+        else:
+            return self
 
     def draw(self):
-        if self.effects_type_menu is None:
+        if self._menu is None:
             self.prepare_list()
-        self.effects_type_menu.draw()
+        self._menu.draw()
 
-    def effects_menu(self, effect_type):
-
-        list_of_types = ['Light Effects','Gravity Effects','Sound Effects','Physical Effects']
-
-        light_eff = ['Solid','Rainbow','Comet','Storm','Sparks','Madelaine','Mixer','Heartbeat']
-        gravity_eff = ['Springs','Pong','Pendulum','Rolling stones','Rain','Snow','Particles','Sandglass']
-        sound_eff = ['Spectrum','VU Meter','Sound Waves','Sound Particles','Sound Rush']
-        physical_eff = ['Clock','Sensors data','All together','Temperature','Humidity','Pressure']
-        effects = (light_eff,gravity_eff,sound_eff,physical_eff)
-        self.effect_type = effect_type
-        return effects[effect_type], len(effects[effect_type])
-'''
-class EffectTypeList(CustomItem):
-
-    def __init__(self, name, m):
-        super().__init__(name)
-        self.effects_type_menu = None
-        self.m = m
-
-
-    def prepare_list(self):
-        list_of_types = ['Light Effects', 'Gravity Effects', 'Sound Effects', 'Physical Effects']
-        self.effects_type_menu = Menu(c.display, wr_menu, per_page=5, x0=0, y0=0, m_width=158, menu_header=True, draw_default=False)
-        builder = MenuScreen(self.m+' Effects', self.parent)
-
-        for idx, eff_type in enumerate(list_of_types):
-            builder.add(EffectList(eff_type, idx, self.m, self.effects_type_menu))
-        self.effects_type_menu.set_screen(builder)
-
-    def up(self):
-        self.effects_type_menu.move(-1)
-
-    def down(self):
-        self.effects_type_menu.move()
-
-    def select(self):
-        self.effects_type_menu.click()
-        return self.parent
-
-    def draw(self):
-        if self.effects_type_menu is None:
-            self.prepare_list()
-        self.effects_type_menu.draw()
-
+"""
 class EffectList(CustomItem):
 
     def __init__(self, name, e, led, builder):
@@ -96,11 +90,11 @@ class EffectList(CustomItem):
         physical_eff = ['Clock', 'Sensors data', 'All together', 'Temperature', 'Humidity', 'Pressure']
         effects = (light_eff, gravity_eff, sound_eff, physical_eff)
         #self.effects_menu = Menu(c.display, wr_menu, per_page=5, x0=0, y0=0, m_width=158, menu_header=True, draw_default=False)
-        #builder = MenuScreen('Type of Effects', self.parent)
+        #screen_etm = MenuScreen('Type of Effects', self.parent)
 
         for idx, eff in enumerate(effects[self.e]):
             self.builder.add(SubMenuItem(eff))
-        #self.effects_menu.set_screen(builder)
+        #self.effects_menu.set_screen(screen_etm)
 
     def up(self):
         self.builder.move(-1)
@@ -110,15 +104,16 @@ class EffectList(CustomItem):
 
     def select(self):
         self.builder.click()
-        return self.parent
+        return self
 
     def draw(self):
         if self.builder is None:
             self.prepare_list()
         self.builder.draw()
-
+"""
 menu = Menu(c.display, per_page= 6,line_height=12,x0=0,y0=0, m_width=92,menu_header=False)
-menu.set_screen(MenuScreen('MAIN MENU')
+screen = MenuScreen('MAIN MENU')
+menu.set_screen(screen
             .add(SubMenuItem('Settings')
                 .add(SubMenuItem('Gamma Table')
                     .add(ValueItem('Gamma factor', c.gamma_table.gamma_factor(), 1, 4, 0.1, c.change_gamma_factor, 1))
@@ -126,8 +121,8 @@ menu.set_screen(MenuScreen('MAIN MENU')
                     .add(InfoItem("Table length:", decorator=c.get_gamma_length, visible=1)))
                 .add(ValueItem('Color of menu', 15, 0, len(fss) - 1, 1, change_menu_color, 1))
                 .add(EnumItem("Buzzer", ['On', 'Off'], c.buzzer_sound, 0)))
-            .add(EffectTypeList('LED1', 'LED1'))
-            .add(EffectTypeList('LED2', 'LED2'))
+            .add(etm('LED1', screen))
+            .add(Lists('LED2',2,0))
             .add(SubMenuItem('Main Info')
                 .add(InfoItem('Status:', 'ok'))
                 .add(InfoItem('Temp:', '45.1')))
@@ -141,7 +136,8 @@ async def switch_handler():
             #print(c.hour,c.minutes,c.seconds,c.year,c.month,c.day,c.weekday)
             #print(c.temperature,c.humidity,c.pressure)
             c.display_refresh = False
-            menu.draw()
+            if menu.current_screen.title == 'MAIN MENU':
+                menu.draw()
         if c.encoder.value() != 0:
             menu.move(c.encoder.value())
             c.encoder.value(0)
@@ -200,20 +196,6 @@ class Menu(object):
         self.params_list_selected = 0       # selected list of parameters
         self.params_set = 0                 # selected set of parameters
 
-    def get_menu(self,menu_type, menu_no):
-        # menu types: btm - bottom menu, top - top menu, sub - submenu, eff - effects, param - parameters, color - colors
-        if menu_type == 'btm':
-            return self.bottom_menu(menu_no)
-        elif menu_type == 'top':
-            return self.top_menu(menu_no)
-        elif menu_type == 'sub':
-            return self.sub_menu(menu_no)
-        elif menu_type == 'eff':
-            return self.effects_menu(menu_no)
-        elif menu_type == 'param':
-            return self.param_menu(menu_no)
-        elif menu_type == 'color':
-            return self.color_menu()
 
 
 
@@ -332,10 +314,10 @@ class ParamsList(CustomItem):
     def prepare_list(self):
         files = os.listdir()
         self._menu = Menu(c.display, wr_menu, arial10, per_page = 4,x0 = 40, y0 = 20,m_width = 120)
-        builder = MenuScreen('Parameters', self.parent)
+        screen_etm = MenuScreen('Parameters', self.parent)
         for file in files:
-            builder.add(FilePreview(file))
-        self._menu.set_screen(builder)
+            screen_etm.add(FilePreview(file))
+        self._menu.set_screen(screen_etm)
 
     def up(self):
         self._menu.move(-1)
@@ -349,7 +331,7 @@ class ParamsList(CustomItem):
 
     def draw(self):
         if self._menu is None:
-            self.prepare_list()
+          ! self.prepare_list()
         self._menu.draw()
 
 
