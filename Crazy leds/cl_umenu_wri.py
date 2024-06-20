@@ -199,8 +199,8 @@ class InfoItem(MenuItem):
 
 class CustomItem(MenuItem):
 
-    def __init__(self, name, visible=None):
-        super().__init__(name, visible=visible)
+    def __init__(self, name, visible=None,decorator=''):
+        super().__init__(name, visible=visible,decorator=decorator)
         self.display = None  # it is set after initialization via Menu._update_display()
 
     def click(self):
@@ -227,7 +227,7 @@ class CustomItem(MenuItem):
 class ValueItem(CustomItem, CallbackItem):
 
     def __init__(self, name, value_reader, min_v, max_v, step, callback, visible=None):
-        super().__init__(name, visible=visible)
+        super().__init__(name, visible=visible,decorator='')
         self._value = value_reader if not self._check_callable(value_reader, False) else 0
         self.value_reader = value_reader
         self.min_v = min_v
@@ -311,7 +311,7 @@ class MenuScreen:
 
         self.x = 0
         self.y = 0
-        self.width = 90
+        self.width = m_params[5]
 
 
     def add(self, item, parent=None):

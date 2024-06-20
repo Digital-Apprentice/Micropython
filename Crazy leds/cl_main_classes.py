@@ -90,6 +90,9 @@ class Led(Segment):
         self.general_speed = 5
         self.auto_mode = True
         self.auto_mode_time = 100
+        # current effect number
+        self.current_effect_no = 0
+
         self.auto_mode_effects = []
         self.auto_mode_params = []
         self.auto_mode_current_effect_no = 0

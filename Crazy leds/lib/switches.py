@@ -39,6 +39,14 @@
 from machine import Pin
 import time
 
+button_refresh = None
+def b_refresh(state=None):
+    global button_refresh
+    if state != None:
+        button_refresh = state
+    else:
+        return button_refresh
+
 class Button:
     
     def __init__(self, button_pin, powering='GND',click_interval = 200, long_press_time = 1500):
@@ -86,7 +94,7 @@ class Button:
                     
             self._time_of_last_state = self._time_of_state
             self._last_button_value = self.button_value
-
+            b_refresh(True)
     
     def powering(self, button_pin=None, powering=None):
         if (button_pin and powering) != None:
