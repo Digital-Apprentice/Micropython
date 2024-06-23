@@ -59,21 +59,34 @@ def em(idx):
     effects = (light_eff, gravity_eff, sound_eff)#, physical_eff)
     return effects[idx]
 
-def pm(idx):
+def pm(idx,tp=None):
     # params_list_no - number of the list of parameters for the effect
     # params_type - type of the parameters, 0 - effect, 1 - settings, 9 - defined values
 
-    params_dict = {0: ('Params set', 0, None), 1: ('Brightness', 0, 7), 2: ('Speed', 0, 10), 3: ('Quantity', 1, 50),
-                   4: ('Step', 0, None), 5: ('Color step', 0, None),
-                   6: ('Dynamic color', False, True), 7: ('Length', 0, None), 8: ('Sections', 0, None),
-                   9: ('Direction', -1, 1), 10: ('Delay time', 0, 300,),
-                   11: ('Wait time', 0, 5000), 12: ('Random factor', 0.0, 1.0), 13: ('Position offset', 0, None),
-                   14: ('Effect mode', 0, 3),
-                   15: ('Multiplier mode', 0, 10), 16: ('Color mode', 0, 6), 17: ('Col mix method', 0, 2),
+    params_dict = {0: ('Params set', 0, None),
+                   1: ('Brightness',7, 0, 7,1),
+                   2: ('Speed',4, 0, 10, 1),
+                   3: ('Quantity', 20, 1, 50,1),
+                   4: ('Step', 1, 1, 414, 1),
+                   5: ('Color step', 1, 0, 255,1),
+                   6: ('Dynamic color', False, True),
+                   7: ('Length',5, 0, 414,1),
+                   8: ('Sections', 0, None),
+                   9: ('Direction',1, -1, 1, 2),
+                   10: ('Delay time', 25, 10, 300,5),
+                   11: ('Wait time', 0, 0, 5000,100),
+                   12: ('Random factor', 0.5, 0.0, 1.0, 0.05),
+                   13: ('Position offset', 0,0,414,1 ),
+                   14: ('Effect mode', 0, 0, 3, 1),
+                   15: ('Multiplier mode', 0, 10),
+                   16: ('Color mode', 0, 6),
+                   17: ('Col mix method', 0, 2),
                    18: ('Solid color', False, True),
                    30: ('Primary Color', 0, None, color_menu()),
-                   31: ('Secondary Color', 0, None, color_menu()), 32: ('Third color', 0, None, color_menu()),
-                   33: ('Palette-grd', 0, None), 34: ('Palette-std', 0, None),
+                   31: ('Secondary Color', 0, None, color_menu()),
+                   32: ('Third color', 0, None, color_menu()),
+                   33: ('Palette-grd', 0, None),
+                   34: ('Palette-std', 0, None),
                    50: ('Buzzer', 0, 1), 51: ('LCD Brightness', 0, 10)}
 
     # None means maximum value of the parameter, for colors 'DC' means defined colors, None means length of the palette
@@ -82,11 +95,13 @@ def pm(idx):
     # -1,1 means -1 - counterclockwise, 1 - clockwise
     # TODO zrealizować dodatkowe menu do wyboru kolorów - zdefiniowanych, z palet lub ustawienie własnej wartości RGB
 
-    l_rainbow = (2, 5, 6, 9)
+    l_rainbow = (2, 5, 9)
     sub_list = (l_rainbow,l_rainbow,l_rainbow,l_rainbow,l_rainbow,l_rainbow,l_rainbow,l_rainbow,l_rainbow,l_rainbow)
     # TODO: implement the rest of the parameters
     params = list(params_dict.get(x) for x in sub_list[idx])
     return params
+
+
 
 def params_sets(self, sub_list_no, params_set_no):
     l_rainbow = [[5, 0, 1, 1], [50, 5, 1, -1]]
@@ -94,6 +109,60 @@ def params_sets(self, sub_list_no, params_set_no):
     return params_sets[sub_list_no][params_set_no], len(params_sets[sub_list_no][params_set_no])
 
 def color_menu():
+    pass
+
+def seg_menu(id,item_type):
+    l = c.get_led_device(id)
+    if item_type == 0:
+        c_sgm = EnumItem('Segment', l.make_only_active_segments_list(), l.set_current_segment, 0)
+        c_sgm.decorator = str(l.current_segment)
+        return c_sgm
+        
+    elif item_type ==1:
+        return InfoItem('ASeg:', decorator=l.make_segments_string,visible=1)
+    elif item_type ==2:
+        status = l.get_active_segments()
+        a_sgm = SubMenuItem('Segments:')\
+                    .add(ToggleItem('Segment 0',(l.get_active_segments,0),(l.set_active_segment,(0,not status[0]))))\
+                    .add(ToggleItem('Segment 1',(l.get_active_segments,1),(l.set_active_segment,(1,not status[0]))))\
+                    .add(ToggleItem('Segment 2',(l.get_active_segments,2),(l.set_active_segment,(2,not status[0]))))\
+                    .add(ToggleItem('Segment 3',(l.get_active_segments,3),(l.set_active_segment,(3,not status[0]))))\
+                    .add(ToggleItem('Segment 4',(l.get_active_segments,4),(l.set_active_segment,(4,not status[0]))))
+                            
+        a_sgm.decorator = l.make_segments_string
+        return a_sgm
+
+def cas(l,seg):
+    status = l.check_active_segments()
+    if seg == None:
+        string =  ''
+        for s in status:
+            string += str(int(s))
+        print('string',string)
+        return string   # return list of statuses as binary value in string format
+    elif seg == 'l':
+        a_s = []
+        for i, s in enumerate(status):
+            if s == True:
+                a_s.append(str(i))
+            else:
+                continue
+            print('a_s',a_s)
+        return a_s  # return list of statuses as in string format but only active ones
+    elif seg == -1:
+        return status   # return list of statuses
+    else:
+        return int(status[seg]) # return status of a desired segment
+
+def sas(l,seg):
+    status = cas(l,-1)
+    print('status[seg]',seg,status[seg],'not status[seg]',not status[seg] )
+    l.set_active_segment(active_segment=seg,flag=not status[seg])
+    #print('cas(l,seg)',cas(l,seg),cas(l,-1))
+    print('active_segments',l.active_segments)
+    return cas(l,seg)
+    
+def pal_menu():
     pass
 
 def led_menu(name, id):
@@ -109,16 +178,20 @@ def led_menu(name, id):
             eff = SubMenuItem(effect)
             eff.decorator = '|'+str(idx2)+'>'
             eff.menu.title = str(id)+str(idx1)+str(idx2)
+            eff.add(seg_menu(id,0))
             for idx3, par in enumerate(pm(idx2)):    #pm(idx2)
                 print(pm(idx2))
-                param = ValueItem(par[0], 0, 0, 10, 1,print)
+                param = ValueItem(par[0], par[1],par[2],par[3], 1,print)
                 #param = ValueItem('Speed', 10, 1, 100, 1, print)
                 eff.add(param)
             e_menu.add(eff)
             #print('e_menu   first', e_menu.__dict__)
         #print('e_menu', e_menu.__dict__)
         etm_menu.add(e_menu)
+    etm_menu.add(seg_menu(id,2))
+    #etm_menu.add(seg_menu(id,1))
     #print('etm_menu', etm_menu.__dict__)
+    
     return etm_menu
 
 # menu composition
@@ -152,6 +225,8 @@ async def switch_handler():
             # print(c.temperature,c.humidity,c.pressure)
             c.display_refresh = False
             menu.draw()
+            print('current segment led1:', c.get_led_device(1).current_segment)
+            print('current segment led2:', c.get_led_device(2).current_segment)
             # try:
             #    if menu.current_screen.title[0:3] != 'LED':
             #        menu.draw()

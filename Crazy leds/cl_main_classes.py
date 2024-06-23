@@ -69,12 +69,20 @@ class Segment():
 class Led(Segment):
     # segments = i.e.[seg0, seg1, seg2, seg3, seg4]
     # first create segment instances and pass as a list to the device
-    def __init__(self, id, segments=None, aled=None):
+    def __init__(self, id, segments, aled=None):
         self.id = id
         self.aled_object = aled
         self.segments = segments
+        if self.id == 1:
+            self.current_segment = 0
+        elif self.id == 2:
+            self.current_segment = 4
         self.active_segments = []
-        self.set_active_segment()
+        self.active_segments_string = ''
+        self.only_active_segments = []
+        self.check_active_segments()
+        self.make_segments_string()
+        self.make_only_active_segments_list()
         self.led_buffer = aled.aled_buffer
         self.led_buffer_adr = aled.aled_buffer_addr
 
@@ -107,28 +115,65 @@ class Led(Segment):
             self.active_segments.append(_segment.active)  # list of active segments
         return self.active_segments
 
-    def set_active_segment(self, active_segment=0, flag=False):
-        self.check_active_segments()
+    def set_current_segment(self,seg=None):
+        self.current_segment = int(seg)
+        return
+
+    def set_active_segment(self, active_segment, flag=True):
         active_segments_list_length = len(self.active_segments)
-        if flag == True:
+        print('active segment',active_segment,'length',active_segments_list_length,'flag',flag)
+        if flag:
             if active_segment == 0:
-                self.active_segments[0] = True
+                self.segments[0].active = True
                 for i in range(1, active_segments_list_length):
-                    self.active_segments[i] = False
-            elif 0 < active_segment < active_segments_list_length - 1:
-                self.active_segments[active_segment] = True
-                self.active_segments[0] = False
-                self.active_segments[-1] = False
+                    self.segments[i].active = False
+                print('active segment = 0',self.active_segments)
+            elif active_segment < (active_segments_list_length - 1):
+                self.segments[active_segment].active = True
+                self.segments[0].active = False
+                self.segments[-1].active = False
+                print('0<as<asll-1',active_segments_list_length - 1,self.active_segments)
             elif active_segment == active_segments_list_length - 1:
-                self.active_segments[-1] = True
+                self.segments[-1].active = True
                 for i in range(0, active_segments_list_length - 1):
-                    self.active_segments[i] = False
+                    self.segments[i].active = False
+                print('assl-1',active_segments_list_length - 1,self.active_segments)
             else:
                 # set all segments as inactive if active_segment not in range
                 for i in range(0, active_segments_list_length):
-                    self.active_segments[i] = False
+                    self.segments[i].active = False
         else:
-            self.active_segments[active_segment] = False
+            self.segments[active_segment].active = False
+        self.check_active_segments()
+        self.make_segments_string()
+        self.make_only_active_segments_list()
+        return self.get_active_segments(active_segment) # return active segment status
+
+    def get_active_segments(self, segment=None):
+        if segment != None:
+            return self.active_segments[segment]
+        else:
+            return self.active_segments
+
+    def negate_active_segment(self, segment):
+        self.segments[segment].active = not self.segments[segment].active
+        self.active_segments[segment] = self.segments[segment].active
+        return self.active_segments[segment]
+    def make_segments_string(self):
+        self.active_segments_string = ''
+        for s in self.active_segments:
+            self.active_segments_string += str(int(s))
+        return self.active_segments_string  # return list of statuses as binary values in string format
+
+    def make_only_active_segments_list(self):
+        self.only_active_segments.clear()
+        for i, s in enumerate(self.active_segments):
+            if s == True:
+                self.only_active_segments.append(str(i))
+            else:
+                continue
+        print('only active:  ',self.only_active_segments)
+        return self.only_active_segments  # return list of statuses as binary values in string format but only active ones
 
     def set_led_palette(self, pal_length=None, palette_no=0, gradient=False):
         self.led_palette = Palette(pal_length=None, palette_no=0, gradient=False, order=[1, 0, 2, 3]).palette
@@ -199,9 +244,9 @@ class Controller(Led):
         self.progress(1)
         self.set_buttons()
         self.progress(1)
-        self.set_led1(72)
+        self.set_led1(1,72)
         self.progress(1)
-        self.set_led2(144*3)
+        self.set_led2(3,144)
         self.set_timer()
         self.progress(1)
         self.gc_collect()
@@ -315,8 +360,9 @@ class Controller(Led):
 
     # setup of addressable leds:
     ## led buffers
-    def set_led1(self,n):
+    def set_led1(self,x,y):
         # led1 buffer
+        n = x*y
         el_leds_buffer = np.array(n * [[0, 0, 0]], dtype=np.uint8)
         # memoryview of the buffers
         el_mv = memoryview(el_leds_buffer)
@@ -342,8 +388,9 @@ class Controller(Led):
         self.led1.aled_object.aled_fast_fill(self.led1.led_buffer, (n * 3) // 4, 0)
         self.led1.aled_object.write()
 
-    def set_led2(self,n):
+    def set_led2(self,x,y):
         # led2 buffer
+        n = x*y
         tl_leds_buffer = np.array(n * [[0, 0, 0]], dtype=np.uint8)
         # memoryview of the buffers
         tl_mv = memoryview(tl_leds_buffer)
@@ -352,9 +399,9 @@ class Controller(Led):
         self.progress(1)
         # Segments of the three led lines
         seg5 = Segment(5, tl_leds_buffer[:], tl_leds)  # all leds
-        seg6 = Segment(6, tl_leds_buffer[:140], tl_leds)  # first line
-        seg7 = Segment(7, tl_leds_buffer[140:280], tl_leds)  # second line, remember to flip (np.flip(seg6,axis=0) segment and pass to the tl_leds_buffer before sending to the led strip
-        seg8 = Segment(8, tl_leds_buffer[280:], tl_leds)  # third line
+        seg6 = Segment(6, tl_leds_buffer[:y], tl_leds)  # first line
+        seg7 = Segment(7, tl_leds_buffer[y:(2*y)], tl_leds)  # second line, remember to flip (np.flip(seg6,axis=0) segment and pass to the tl_leds_buffer before sending to the led strip
+        seg8 = Segment(8, tl_leds_buffer[(2*y):], tl_leds)  # third line
         seg9 = Segment(9, [seg6, seg7, seg8], tl_leds, True)  # matrix
         # set led2 lamp object
         self.led2 = Led(2, [seg5, seg6, seg7, seg8, seg9], tl_leds)
@@ -366,6 +413,10 @@ class Controller(Led):
         # aled_fill black (turn off) all leds
         self.led2.aled_object.aled_fast_fill(self.led2.led_buffer, (n * 3) // 4, 0)
         self.led2.aled_object.write()
+
+    def get_led_device(self, id):
+        leds = (None, self.led1, self.led2)
+        return leds[id]
 
     def gc_collect(self):
         gc.collect()  # collect garbage
@@ -559,3 +610,6 @@ class Controller(Led):
                 self.led2.led_palette_gamma_corrected = False
         else:
             return
+
+    # segments methods
+

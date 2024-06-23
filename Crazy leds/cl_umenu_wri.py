@@ -140,7 +140,11 @@ class EnumItem(SubMenuItem):
     def __init__(self, name, items, callback, selected=None, visible=None):
         super().__init__(name, visible=visible)
         if not isinstance(items, list):
-            raise ValueError("items should be a list!")
+            try:
+                items = list(items)
+            except:
+                raise ValueError("items should be a list!")
+        print('items type',type(items))
         self.callback = callback
         self.items = items
         self.selected = 0 if selected is None else self._get_index_by_key(selected)
