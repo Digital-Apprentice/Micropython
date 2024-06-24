@@ -3,23 +3,11 @@ from cl_umenu_wri import *     # updated Pawel Lugowski's umenu system to use Pe
 from lib.switches import b_refresh
 import uasyncio as asyncio
 from cl_palettes import full_saturation_spectrum as fss
+from c_palettes import def_colors
 
 
 def change_menu_color(arg):
     menu.set_colors(c.display.rgb(fss[arg]), c.display.rgb(black))
-
-
-def effects_menu(effect_type):
-
-    list_of_types = ['Light Effects','Gravity Effects','Sound Effects','Physical Effects']
-
-    light_eff = ['Solid','Rainbow','Comet','Storm','Sparks','Madelaine','Mixer','Heartbeat']
-    gravity_eff = ['Springs','Pong','Pendulum','Rolling stones','Rain','Snow','Particles','Sandglass']
-    sound_eff = ['Spectrum','VU Meter','Sound Waves','Sound Particles','Sound Rush']
-    physical_eff = ['Clock','Sensors data','All together','Temperature','Humidity','Pressure']
-    effects = (light_eff,gravity_eff,sound_eff,physical_eff)
-    effect_type = effect_type
-    return effects[effect_type], len(effects[effect_type])
 
 def check_buttons():
     
@@ -81,10 +69,10 @@ def pm(idx,tp=None):
                    15: ('Multiplier mode', 0, 10),
                    16: ('Color mode', 0, 6),
                    17: ('Col mix method', 0, 2),
-                   18: ('Solid color', False, True),
-                   30: ('Primary Color', 0, None, color_menu()),
-                   31: ('Secondary Color', 0, None, color_menu()),
-                   32: ('Third color', 0, None, color_menu()),
+                   18: ('Solid color', True),
+                   30: ('Primary Color', True),
+                   31: ('Secondary Color', True),
+                   32: ('Third color', True),
                    33: ('Palette-grd', 0, None),
                    34: ('Palette-std', 0, None),
                    50: ('Buzzer', 0, 1), 51: ('LCD Brightness', 0, 10)}
@@ -102,83 +90,74 @@ def pm(idx,tp=None):
     return params
 
 
-
 def params_sets(self, sub_list_no, params_set_no):
     l_rainbow = [[5, 0, 1, 1], [50, 5, 1, -1]]
     params_sets = (l_rainbow,)
     return params_sets[sub_list_no][params_set_no], len(params_sets[sub_list_no][params_set_no])
 
-def color_menu():
-    pass
-
-def seg_menu(id,item_type):
+def segment_menu(id,item_type):
     l = c.get_led_device(id)
     if item_type == 0:
-        c_sgm = EnumItem('Segment', l.make_only_active_segments_list(), l.set_current_segment, 0)
+        c_sgm = EnumItem('Current seg.', l.make_only_active_segments_list(), l.set_current_segment, 0)
         c_sgm.decorator = str(l.current_segment)
         return c_sgm
-        
     elif item_type ==1:
-        return InfoItem('ASeg:', decorator=l.make_segments_string,visible=1)
-    elif item_type ==2:
-        
-        a_sgm = SubMenuItem('Segments:')\
+        a_sgm = SubMenuItem('Active seg.:')\
                     .add(ToggleItem('Segment 0',(l.get_active_segments,0),(l.set_active_segment,(0,None))))\
                     .add(ToggleItem('Segment 1',(l.get_active_segments,1),(l.set_active_segment,(1,None))))\
                     .add(ToggleItem('Segment 2',(l.get_active_segments,2),(l.set_active_segment,(2,None))))\
                     .add(ToggleItem('Segment 3',(l.get_active_segments,3),(l.set_active_segment,(3,None))))\
                     .add(ToggleItem('Segment 4',(l.get_active_segments,4),(l.set_active_segment,(4,None))))
-                            
         a_sgm.decorator = l.make_segments_string
         return a_sgm
+    elif item_type == 2:
+        return InfoItem('ASeg:', decorator=l.make_segments_string, visible=1)
 
-def cas(l,seg):
-    status = l.check_active_segments()
-    if seg == None:
-        string =  ''
-        for s in status:
-            string += str(int(s))
-        print('string',string)
-        return string   # return list of statuses as binary value in string format
-    elif seg == 'l':
-        a_s = []
-        for i, s in enumerate(status):
-            if s == True:
-                a_s.append(str(i))
-            else:
-                continue
-            print('a_s',a_s)
-        return a_s  # return list of statuses as in string format but only active ones
-    elif seg == -1:
-        return status   # return list of statuses
-    else:
-        return int(status[seg]) # return status of a desired segment
 
-def sas(l,seg):
-    status = cas(l,-1)
-    print('status[seg]',seg,status[seg],'not status[seg]',not status[seg] )
-    l.set_active_segment(active_segment=seg,flag=not status[seg])
-    #print('cas(l,seg)',cas(l,seg),cas(l,-1))
-    print('active_segments',l.active_segments)
-    return cas(l,seg)
-    
-def pal_menu():
-    pass
+def color_menu(id, version):
+    l = c.get_led_device(id)
+    #item0 = EnumItem('Palette mode', ['LED'+l.id+' device','Segment'], l.palette_mode, 0)
+    item1 = EnumItem('Palette', ['Normal pal.', 'Gradient pal.', 'Solid color'], l.palette_type, 0)
+    item2 = EnumItem('Def. color', def_colors, l.color, 0,visible=l.check_palette_type)
+    item1 = SubMenuItem('RGB color',visible=l.check_palette_type)\
+                .add(ValueItem('Red', 50, 0, 255, 1, ___, 0))\
+                .add(ValueItem('Green', 100, 0, 255, 1, ___, 0))\
+                .add(ValueItem('Blue', 150, 0, 255, 1, ___, 0))\
+                .add(CallbacItem('Set color', l.set_color, 0))
+    item3 = EnumItem(Color )
+    item2 = EnumItem('Pri. color', def_colors, l.color, 0)
+    item3 = EnumItem('Sec. color', def_colors, l.color, 1)
+    item4 = EnumItem('Thi. color', def_colors, l.color, 2)
+    item5 = ValueItem('Color step', 1, 0, 255, 1, l.color_step, 0,visible= not l.check_palette_type)
+    item6 = ValueItem('Color offset', 0,0,l.palette_length, 1, l., 0, visible = not l.check_palette_type)
+    if version == 0:
+        return item0
+    elif version == 1:
+        return item1.add(item2)
+    elif version == 2:
+        return item1.add(item2).add(item3)
+    elif version == 3:
+
+
+def palette_menu():
+    pal_item = EnumItem('Palette', ['Normal pal.','Gradient pal.','Solid color'],c.palette_type,0)
+    return
 
 def led_menu(name, id):
     etm_menu = SubMenuItem(name)
     etm_menu.decorator = '|'+str(id)+'>'
     etm_menu.menu.title = str(id)
+    etm_menu.add(segment_menu(id, 1))
     for idx1, eff_type in enumerate(etm()):
         e_menu = (SubMenuItem(eff_type))
         e_menu.decorator = '|'+str(idx1)+'>'
         e_menu.menu.title = str(id)+str(idx1)
+        e_menu.add(segment_menu(id,0))
         for idx2, effect in enumerate(em(idx1)):
             #print('effect: ', idx2, effect)
             eff = SubMenuItem(effect)
             eff.decorator = '|'+str(idx2)+'>'
             eff.menu.title = str(id)+str(idx1)+str(idx2)
-            eff.add(seg_menu(id,0))
             for idx3, par in enumerate(pm(idx2)):    #pm(idx2)
                 print(pm(idx2))
                 param = ValueItem(par[0], par[1],par[2],par[3], 1,print)
@@ -188,18 +167,17 @@ def led_menu(name, id):
             #print('e_menu   first', e_menu.__dict__)
         #print('e_menu', e_menu.__dict__)
         etm_menu.add(e_menu)
-    etm_menu.add(seg_menu(id,2))
+
     #etm_menu.add(seg_menu(id,1))
     #print('etm_menu', etm_menu.__dict__)
-    
     return etm_menu
 
 # menu composition
 c.progress(1)
 menu = Menu(c.display, per_page= 6,line_height=12,x0=0,y0=0, m_width=92,menu_header=False)
 screen = MenuScreen('MAIN MENU')
-led1 = led_menu('LED1', 1)
-led2 = led_menu('LED2', 2)
+led1 = led_menu('LED1', c.led1.id)
+led2 = led_menu('LED2', c.led2.id)
 menu.set_screen(screen
             .add(led1)
             .add(led2)
@@ -225,8 +203,8 @@ async def switch_handler():
             # print(c.temperature,c.humidity,c.pressure)
             c.display_refresh = False
             menu.draw()
-            print('current segment led1:', c.get_led_device(1).current_segment)
-            print('current segment led2:', c.get_led_device(2).current_segment)
+            #print('current segment led1:', c.get_led_device(1).current_segment)
+            #print('current segment led2:', c.get_led_device(2).current_segment)
             # try:
             #    if menu.current_screen.title[0:3] != 'LED':
             #        menu.draw()

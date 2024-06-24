@@ -16,8 +16,6 @@ from lib.writer import CWriter
 
 ### from el_effects import Effects
 
-def_colors.extend(['R', 'RM'])
-
 
 # display, bme, ds, rtc, buzzer, mv_raw_sound_samples,
 
@@ -93,6 +91,8 @@ class Led(Segment):
         self.palette_length = None
         self.palette_gradient = False
         self.set_led_palette( pal_length=self.palette_length, palette_no=self.palette_no, gradient=self.palette_gradient)
+        self.custom_color = [0,0,0]
+        self.palette_type = 'N' # N - normal, G - gradient, S - Solid color (no palette)
         self.led_active = False
         self.device_brightness = 7
         self.general_speed = 5
@@ -116,30 +116,29 @@ class Led(Segment):
         return self.active_segments
 
     def set_current_segment(self,seg=None):
-        self.current_segment = int(seg)
+        if seg == 'All inactive':
+            self.current_segment = None
+        else:
+            self.current_segment = int(seg)
         return
 
     def set_active_segment(self, active_segment, flag=True):
         active_segments_list_length = len(self.active_segments)
         if flag == None:
             flag = not self.segments[active_segment].active
-        print('active segment',active_segment,'length',active_segments_list_length,'flag',flag)
         if flag == True:
             if active_segment == 0:
                 self.segments[0].active = True
                 for i in range(1, active_segments_list_length):
                     self.segments[i].active = False
-                print('active segment = 0',self.active_segments)
             elif active_segment > 0 and active_segment < (active_segments_list_length - 1):
                 self.segments[active_segment].active = True
                 self.segments[0].active = False
                 self.segments[-1].active = False
-                print('0<as<asll-1',active_segments_list_length - 1,self.active_segments)
             elif active_segment == active_segments_list_length - 1:
                 self.segments[-1].active = True
                 for i in range(0, active_segments_list_length - 1):
                     self.segments[i].active = False
-                print('assl-1',active_segments_list_length - 1,self.active_segments)
             else:
                 # set all segments as inactive if active_segment not in range
                 for i in range(0, active_segments_list_length):
@@ -170,8 +169,10 @@ class Led(Segment):
                 self.only_active_segments.append(str(i))
             else:
                 continue
-        print('only active:  ',self.only_active_segments)
+        if self.only_active_segments == []:
+            self.only_active_segments.append('All inactive')
         return self.only_active_segments  # return list of statuses as binary values in string format but only active ones
+
 
     def set_led_palette(self, pal_length=None, palette_no=0, gradient=False):
         self.led_palette = Palette(pal_length=None, palette_no=0, gradient=False, order=[1, 0, 2, 3]).palette
@@ -183,6 +184,38 @@ class Led(Segment):
         self.led_palette_active = False
         self.led_palette_gamma_corrected = False
 
+    def palette_mode(self, mode):
+        if mode.startswith('L'):
+            flag_l = True
+            flag_s = False
+        else:
+            flag_l = False
+            flag_s = True
+
+        self.led_palette_active = flag_l
+        try:
+            for i,s in self.active_segments:
+                if s: self.segments[i].seg_palette_active = flag_s
+        except:
+            return
+
+    def set_color_type(self, color):
+        pass
+
+    def led_palette_type(self, type):
+        if type == 'N':
+            self.palette_type = 'N'
+        elif type == 'G':
+            self.palette_type = 'G'
+        elif type == 'S':
+            self.palette_type = 'S'
+        else:
+            return
+    def check_led_palette(self):
+        if self.palette_type == 'S':
+            return True
+        else:
+            return False
 
 class Controller(Led):
 
@@ -493,7 +526,6 @@ class Controller(Led):
         y_str = str(self.year)
         m_str = self.prefix(self.month)
         d_str = self.prefix(self.day)
-        print(self.weekday)
         w_str = self.get_name_of_the_day(self.weekday)
         return d_str, m_str, y_str, w_str
 

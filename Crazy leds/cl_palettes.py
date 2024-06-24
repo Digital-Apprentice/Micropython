@@ -61,7 +61,7 @@ darkviolet = (148,0,211)
 darkyellow = (240,200,15)
 darkyellow2 = (255,215,0)
 
-def_colors = [red, green, blue, yellow, cyan, magenta, purple, orange, pink, darkslategray, darkgreen, darkblue, darkred, darkorange, darkmagenta, darkcyan, darkviolet, darkyellow, darkyellow2, white, black]
+def_colors = [red, green, blue, yellow, cyan, magenta, purple, orange, pink, darkslategray, darkgreen, darkblue, darkred, darkorange, darkmagenta, darkcyan, darkviolet, darkyellow, darkyellow2, white, black,'R']
 
 color_wheel = [(0, 255, 0), (3, 252, 0), (6, 249, 0), (9, 246, 0), (12, 243, 0), (15, 240, 0),
                  (18, 237, 0), (21, 234, 0), (24, 231, 0), (27, 228, 0), (30, 225, 0), (33, 222, 0),
