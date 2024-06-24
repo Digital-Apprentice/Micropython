@@ -121,13 +121,13 @@ def seg_menu(id,item_type):
     elif item_type ==1:
         return InfoItem('ASeg:', decorator=l.make_segments_string,visible=1)
     elif item_type ==2:
-        status = l.get_active_segments()
+        
         a_sgm = SubMenuItem('Segments:')\
-                    .add(ToggleItem('Segment 0',(l.get_active_segments,0),(l.set_active_segment,(0,not status[0]))))\
-                    .add(ToggleItem('Segment 1',(l.get_active_segments,1),(l.set_active_segment,(1,not status[0]))))\
-                    .add(ToggleItem('Segment 2',(l.get_active_segments,2),(l.set_active_segment,(2,not status[0]))))\
-                    .add(ToggleItem('Segment 3',(l.get_active_segments,3),(l.set_active_segment,(3,not status[0]))))\
-                    .add(ToggleItem('Segment 4',(l.get_active_segments,4),(l.set_active_segment,(4,not status[0]))))
+                    .add(ToggleItem('Segment 0',(l.get_active_segments,0),(l.set_active_segment,(0,None))))\
+                    .add(ToggleItem('Segment 1',(l.get_active_segments,1),(l.set_active_segment,(1,None))))\
+                    .add(ToggleItem('Segment 2',(l.get_active_segments,2),(l.set_active_segment,(2,None))))\
+                    .add(ToggleItem('Segment 3',(l.get_active_segments,3),(l.set_active_segment,(3,None))))\
+                    .add(ToggleItem('Segment 4',(l.get_active_segments,4),(l.set_active_segment,(4,None))))
                             
         a_sgm.decorator = l.make_segments_string
         return a_sgm

@@ -121,14 +121,16 @@ class Led(Segment):
 
     def set_active_segment(self, active_segment, flag=True):
         active_segments_list_length = len(self.active_segments)
+        if flag == None:
+            flag = not self.segments[active_segment].active
         print('active segment',active_segment,'length',active_segments_list_length,'flag',flag)
-        if flag:
+        if flag == True:
             if active_segment == 0:
                 self.segments[0].active = True
                 for i in range(1, active_segments_list_length):
                     self.segments[i].active = False
                 print('active segment = 0',self.active_segments)
-            elif active_segment < (active_segments_list_length - 1):
+            elif active_segment > 0 and active_segment < (active_segments_list_length - 1):
                 self.segments[active_segment].active = True
                 self.segments[0].active = False
                 self.segments[-1].active = False
@@ -155,10 +157,6 @@ class Led(Segment):
         else:
             return self.active_segments
 
-    def negate_active_segment(self, segment):
-        self.segments[segment].active = not self.segments[segment].active
-        self.active_segments[segment] = self.segments[segment].active
-        return self.active_segments[segment]
     def make_segments_string(self):
         self.active_segments_string = ''
         for s in self.active_segments:

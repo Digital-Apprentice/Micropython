@@ -144,7 +144,6 @@ class EnumItem(SubMenuItem):
                 items = list(items)
             except:
                 raise ValueError("items should be a list!")
-        print('items type',type(items))
         self.callback = callback
         self.items = items
         self.selected = 0 if selected is None else self._get_index_by_key(selected)
