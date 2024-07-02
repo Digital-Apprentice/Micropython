@@ -127,7 +127,6 @@ class ConfirmItem(SubMenuItem):
     def click(self):
         self.reset()
         self.menu.title = self._question
-
         for pos in range(len(self._answers)):
             name = self._answers[pos]
             self.add(CallbackItem(name, self.callback if pos == 0 else lambda: True), self.parent)

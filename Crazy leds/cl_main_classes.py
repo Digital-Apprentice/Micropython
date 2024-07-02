@@ -31,6 +31,11 @@ class Segment():
 
         self.seg_palette_active = False
         self.seg_palette_gamma_corrected = False
+        self.colors_pst = [[0, 0, 0],[100, 100, 0],[200, 200, 0]]  # solid colors for the segment
+        self.color_step = 1
+        self.color_offset = 0
+
+
         self.direction = True  # True means clockwise, False counterclockwise
         # maybe instead of lists use numpy arrays???
         self.seg_palette = []  # ?????
@@ -71,6 +76,8 @@ class Led(Segment):
         self.id = id
         self.aled_object = aled
         self.segments = segments
+        self.led_active = False
+        self.device_brightness = 7
         if self.id == 1:
             self.current_segment = 0
         elif self.id == 2:
@@ -84,17 +91,18 @@ class Led(Segment):
         self.led_buffer = aled.aled_buffer
         self.led_buffer_adr = aled.aled_buffer_addr
 
-        self.led_palette_active = False
+        self.led_palette_active =False
         self.led_palette_gamma_corrected = False
+        self.palette_type = 'N'  # N - normal, G - gradient, S - Solid color (no palette)
         self.led_palette = []
         self.palette_no = 0
         self.palette_length = None
         self.palette_gradient = False
         self.set_led_palette( pal_length=self.palette_length, palette_no=self.palette_no, gradient=self.palette_gradient)
-        self.custom_color = [0,0,0]
-        self.palette_type = 'N' # N - normal, G - gradient, S - Solid color (no palette)
-        self.led_active = False
-        self.device_brightness = 7
+        self.solid_color = [0,0,0]
+        self.color_pst = 0
+
+
         self.general_speed = 5
         self.auto_mode = True
         self.auto_mode_time = 100
@@ -184,7 +192,8 @@ class Led(Segment):
         self.led_palette_active = False
         self.led_palette_gamma_corrected = False
 
-    def palette_mode(self, mode):
+
+    '''def palette_mode(self, mode):
         if mode.startswith('L'):
             flag_l = True
             flag_s = False
@@ -197,25 +206,73 @@ class Led(Segment):
             for i,s in self.active_segments:
                 if s: self.segments[i].seg_palette_active = flag_s
         except:
-            return
+            return'''
 
-    def set_color_type(self, color):
-        pass
-
-    def led_palette_type(self, type):
-        if type == 'N':
+    def led_palette_type(self, pal):
+        if pal.startswith('N'):
             self.palette_type = 'N'
-        elif type == 'G':
+        elif pal.startswith('G'):
             self.palette_type = 'G'
-        elif type == 'S':
+        elif pal.startswith('S'):
             self.palette_type = 'S'
         else:
             return
-    def check_led_palette(self):
+
+    def set_color_pal_step(self, step=0):
+        self.segments[self.current_segment].color_step = step
+        return
+
+    def set_color_pal_offset(self, offset=0):
+        self.segments[self.current_segment].color_offset = offset
+        return
+
+    def set_pal_color(self, color_no):
+        self.set_solid_color(self.led_palette[color_no])
+        return
+
+    def set_solid_r(self, value):
+        self.set_solid_color(value, 'r')
+        return
+
+    def set_solid_g(self, value):
+        self.set_solid_color(value, 'g')
+        return
+
+    def set_solid_b(self, value):
+        self.set_solid_color(value, 'b')
+        return
+
+    def set_solid_color(self, c_value, color_component=None):
+        if color_component == 'r':
+            self.solid_color[0] = c_value
+        elif color_component == 'g':
+            self.solid_color[1] = c_value
+        elif color_component == 'b':
+            self.solid_color[2] = c_value
+        elif isinstance(c_value, list):
+            self.solid_color = c_value
+        else:
+            return
+
+    def check_if_solid(self):
         if self.palette_type == 'S':
             return True
         else:
             return False
+
+    def set_active_color_pst(self, pst):
+        if pst.startswith('P'):
+            self.color_pst = 0
+        elif pst.startswith('S'):
+            self.color_pst = 1
+        elif pst.startswith('T'):
+            self.color_pst = 2
+        else:
+            return
+
+    def set_color(self):
+        self.segments[self.current_segment].colors_pst[self.color_pst] = self.solid_color
+        return
 
 class Controller(Led):
 

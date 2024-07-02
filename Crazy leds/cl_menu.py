@@ -116,20 +116,32 @@ def segment_menu(id,item_type):
 
 def color_menu(id, version):
     l = c.get_led_device(id)
+
+    # value item params:   (name, value_reader, min_v, max_v, step, callback, visible=None)
+    # enum item params:    (name, options, value_reader, callback, visible=None)
+    # sub menu params:     (name, visible=None)
+    # info item params:    (name, decorator, visible=None)
+    # toggle item params:  (name, value_reader, callback, visible=None)
+    # callback item params: (name, callback)
+
     #item0 = EnumItem('Palette mode', ['LED'+l.id+' device','Segment'], l.palette_mode, 0)
-    item1 = EnumItem('Palette', ['Normal pal.', 'Gradient pal.', 'Solid color'], l.palette_type, 0)
-    item2 = EnumItem('Def. color', def_colors, l.color, 0,visible=l.check_palette_type)
-    item1 = SubMenuItem('RGB color',visible=l.check_palette_type)\
-                .add(ValueItem('Red', 50, 0, 255, 1, ___, 0))\
-                .add(ValueItem('Green', 100, 0, 255, 1, ___, 0))\
-                .add(ValueItem('Blue', 150, 0, 255, 1, ___, 0))\
-                .add(CallbacItem('Set color', l.set_color, 0))
-    item3 = EnumItem(Color )
-    item2 = EnumItem('Pri. color', def_colors, l.color, 0)
-    item3 = EnumItem('Sec. color', def_colors, l.color, 1)
-    item4 = EnumItem('Thi. color', def_colors, l.color, 2)
-    item5 = ValueItem('Color step', 1, 0, 255, 1, l.color_step, 0,visible= not l.check_palette_type)
-    item6 = ValueItem('Color offset', 0,0,l.palette_length, 1, l., 0, visible = not l.check_palette_type)
+    item0 = EnumItem('Palette', ['Normal pal.', 'Gradient pal.', 'Solid color'], l.palette_type, 0)
+    item1 = EnumItem('Color', ['Primary color', 'Secondary color', 'Tertiary color'], l.set_active_color_pst )
+
+    item10 = ValueItem('Pal. no', 0, 0, l.palette_length, 1, l.set_pal_color, visible=not l.check_if_solid)
+    item11 = ValueItem('Pal. color', 0, 0, l.palette_length, 1, l.set_pal_color, visible=not l.check_if_solid)
+    item12 = EnumItem('Def. color', def_colors, l.set_solid_color, 0,visible=l.check_if_solid)
+    item13 = SubMenuItem('RGB color',visible=l.check_if_solid)\
+                .add(ValueItem('Red', 50, 0, 255, 1, l.set_solid_r, 0))\
+                .add(ValueItem('Green', 100, 0, 255, 1,l.set_solid_g, 0))\
+                .add(ValueItem('Blue', 150, 0, 255, 1,l.set_solid_b, 0))\
+                .add(CallBackItem('Set color', l.set_color))
+
+    item20 = ValueItem('Color step', 0, 0, l.palette_length, 1, l.set_color_pal_step,visible= not l.check_if_solid)
+    item21 = ValueItem('Color offset', 0,0,l.palette_length, 1, l.set_color_pal_offset,visible = not l.check_if_solid)
+
+    item30 = CallBackItem('Set color', l.set_color)
+
     if version == 0:
         return item0
     elif version == 1:
@@ -137,11 +149,7 @@ def color_menu(id, version):
     elif version == 2:
         return item1.add(item2).add(item3)
     elif version == 3:
-
-
-def palette_menu():
-    pal_item = EnumItem('Palette', ['Normal pal.','Gradient pal.','Solid color'],c.palette_type,0)
-    return
+        pass
 
 def led_menu(name, id):
     etm_menu = SubMenuItem(name)
