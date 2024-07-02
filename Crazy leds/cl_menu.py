@@ -128,7 +128,8 @@ def color_menu(id, version):
     item0 = EnumItem('Palette', ['Normal pal.', 'Gradient pal.', 'Solid color'], l.palette_type, 0)
     item1 = EnumItem('Color', ['Primary color', 'Secondary color', 'Tertiary color'], l.set_active_color_pst )
 
-    item10 = ValueItem('Pal. no', 0, 0, l.palette_length, 1, l.set_pal_color, visible=not l.check_if_solid)
+    item10 = ValueItem('Pal. no', 0, 0, l.palette_length, 1, l.set_palette, visible=not l.check_if_solid)
+    item10 = ValueItem('Pal. length', 0, 0, 255, l.set_palette_length, visible=not l.check_if_solid)
     item11 = ValueItem('Pal. color', 0, 0, l.palette_length, 1, l.set_pal_color, visible=not l.check_if_solid)
     item12 = EnumItem('Def. color', def_colors, l.set_solid_color, 0,visible=l.check_if_solid)
     item13 = SubMenuItem('RGB color',visible=l.check_if_solid)\

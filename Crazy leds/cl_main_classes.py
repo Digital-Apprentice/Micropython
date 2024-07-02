@@ -192,7 +192,21 @@ class Led(Segment):
         self.led_palette_active = False
         self.led_palette_gamma_corrected = False
 
+    def set_palette_length(self, pal_length):
+        if pal_length != 0:
+            self.palette_length = pal_length
+        else:
+            self.palette_length = None
+        return
 
+    def set_palette(self, palette_no, pal_length=self.palette_length, gradient=self.palette_gradient):
+        self.clear_led_palette()
+        self.palette_no = palette_no
+        self.palette_length = pal_length
+        self.palette_gradient = gradient
+        #TODO - set palette przenieść do controllera i zrealizowac korekcje gamma po ustawieniu palety
+        self.set_led_palette(pal_length=self.palette_length, palette_no=self.palette_no, gradient=self.palette_gradient)
+        return
     '''def palette_mode(self, mode):
         if mode.startswith('L'):
             flag_l = True
@@ -213,6 +227,7 @@ class Led(Segment):
             self.palette_type = 'N'
         elif pal.startswith('G'):
             self.palette_type = 'G'
+            self.palette_gradient = True
         elif pal.startswith('S'):
             self.palette_type = 'S'
         else:
